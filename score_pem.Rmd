@@ -1,0 +1,192 @@
+---
+title: "Score the Parental Empathy Measure"
+author: "Lucy King"
+date: "1/22/2018"
+output: html_document
+---
+
+```{r}
+#Libraries
+library(tidyverse)
+
+#Parameters
+pem_cs_file <- "~/Desktop/BABIES/neglect_perspective/data/BABIES6Months_pem_20180916.csv"
+pem_long_file <- "~/Desktop/BABIES/neglect_perspective/data/LongitudinalBABIES_pem_20180916.csv"
+```
+
+```{r}
+pem <-
+  read_csv(pem_cs_file) %>% 
+  rename(
+    ID = record_id
+  ) %>% 
+  select(
+    -redcap_event_name:-pem_timestamp,
+    -pem_complete
+  ) %>% 
+  mutate(
+    ID = as.integer(ID)
+  ) %>% 
+  bind_rows(
+    read_csv(pem_long_file) %>% 
+      rename(
+        ID = record_id
+      ) %>% 
+      select(
+        -redcap_event_name:-pem_timestamp,
+        -pem_complete
+      ) %>% 
+      mutate(
+        ID = as.numeric(ID)
+      )
+  )
+
+```
+
+
+
+```{r}
+pem <- 
+  pem %>% 
+  mutate_at(
+    vars(
+      pem_2, 
+      pem_6, 
+      pem_7, 
+      pem_9,
+      pem_10,
+      pem_11,
+      pem_12,
+      pem_13,
+      pem_15,
+      pem_16,
+      pem_18,
+      pem_19,
+      pem_25
+    ),
+    funs(
+      . %>%
+        recode("5" = 1, "4" = 2, "3" = 3, "2" = 4, "1" = 5)
+    )
+  )  %>%
+  group_by(ID) %>% 
+  mutate(
+    pem_cogem = mean(
+      c(
+        pem_1, 
+        pem_6, 
+        pem_17, 
+        pem_12, 
+        pem_8, 
+        pem_10, 
+        pem_4, 
+        pem_15, 
+        pem_20, 
+        pem_7, 
+        pem_23, 
+        pem_13, 
+        pem_24, 
+        pem_2
+      ),
+      na.rm = TRUE
+    ) * 14,
+    pem_affem = mean(
+      c(
+        pem_5, 
+        pem_13, 
+        pem_14, 
+        pem_18, 
+        pem_21, 
+        pem_9, 
+        pem_3, 
+        pem_19, 
+        pem_22, 
+        pem_16, 
+        pem_25
+      ),
+      na.rm = TRUE
+    ) * 11,
+    pem_total = mean(
+      c(
+        pem_1,
+        pem_2, 
+        pem_3, 
+        pem_4, 
+        pem_5, 
+        pem_6, 
+        pem_7,  
+        pem_8,	
+        pem_9, 	
+        pem_10,	
+        pem_11, 
+        pem_12,	
+        pem_13,	
+        pem_14,	
+        pem_15,	
+        pem_16,	
+        pem_17,	
+        pem_18,	
+        pem_19,	
+        pem_20,	
+        pem_21,	
+        pem_22,	
+        pem_23,	
+        pem_24,	
+        pem_25
+      ),
+      na.rm = TRUE
+    ) * 25
+  ) %>% 
+  ungroup()
+
+```
+
+```{r}
+pem %>% 
+  ggplot(aes(pem_cogem)) +
+  geom_histogram(binwidth = 2)
+
+pem %>% 
+  ggplot(aes(pem_affem)) +
+  geom_histogram(binwidth = 2)
+
+pem %>% 
+  ggplot(aes(pem_total)) +
+  geom_histogram(binwidth = 5)
+```
+
+```{r}
+pem <-
+  pem %>% 
+  mutate(
+    pem_cogem_win = case_when(
+      pem_cogem  >  mean(pem_cogem, na.rm = TRUE) + 
+        (3 * sd(pem_cogem, na.rm = TRUE)) ~ mean(pem_cogem, na.rm = TRUE) + 
+        (3 * sd(pem_cogem, na.rm = TRUE)),
+      pem_cogem <  mean(pem_cogem, na.rm = TRUE) - 
+        (3 * sd(pem_cogem, na.rm = TRUE)) ~ mean(pem_cogem, na.rm = TRUE) - 
+        (3 * sd(pem_cogem, na.rm = TRUE)),
+      TRUE ~ pem_cogem
+    ),
+    pem_total_win = case_when(
+      pem_total  >  mean(pem_total, na.rm = TRUE) + 
+        (3 * sd(pem_total, na.rm = TRUE)) ~ mean(pem_total, na.rm = TRUE) + 
+        (3 * sd(pem_total, na.rm = TRUE)),
+      pem_total <  mean(pem_total, na.rm = TRUE) - 
+        (3 * sd(pem_total, na.rm = TRUE)) ~ mean(pem_total, na.rm = TRUE) - 
+        (3 * sd(pem_total, na.rm = TRUE)),
+      TRUE ~ pem_total
+    )
+  )
+```
+
+```{r}
+pem %>% 
+  ggplot(aes(pem_cogem_win)) +
+  geom_histogram(binwidth = 2)
+
+pem %>% 
+  ggplot(aes(pem_total_win)) +
+  geom_histogram(binwidth = 5)
+```
+

@@ -1,0 +1,64 @@
+---
+title: "Score CESD"
+author: "Lucy King"
+date: "10/10/2018"
+output: html_document
+---
+
+```{r}
+#Libraries
+library(tidyverse)
+
+#Parameters
+cesd_preg_file <- "~/Desktop/BABIES/preg_hair_cortisol/data/cesd_preg_20180730.csv"
+```
+
+
+```{r}
+cesd <-
+  read_csv(
+    cesd_preg_file
+  ) %>% 
+  rename(ID = record_id) %>%
+  select(
+    -redcap_event_name:-cesd_timestamp,
+    -cesd_complete
+  ) %>%
+  mutate_at(
+    vars(cesd_4, cesd_8, cesd_12, cesd_16),
+    funs(
+      . %>%
+        recode("3" = 0, "2" = 1, "1" = 2, "0" = 3)
+    )
+  )  %>% 
+  group_by(ID) %>%
+  mutate(
+    cesd_total_preg = mean(
+      c(
+        cesd_1,
+        cesd_2,
+        cesd_3,
+        cesd_4,
+        cesd_5,
+        cesd_6,
+        cesd_7,
+        cesd_8,
+        cesd_9,
+        cesd_10,
+        cesd_11,
+        cesd_12,
+        cesd_13,
+        cesd_14,
+        cesd_15,
+        cesd_16,
+        cesd_17,
+        cesd_18,
+        cesd_19,
+        cesd_20
+      ),
+      na.rm = TRUE
+    ) * 20
+  ) %>% 
+  select(ID, cesd_total_preg) 
+```
+

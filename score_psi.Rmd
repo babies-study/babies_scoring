@@ -1,0 +1,88 @@
+---
+title: "Score the Parenting Stress Index"
+output: html_notebook
+---
+
+```{r}
+# Libraries
+library(tidyverse)
+
+# Parameters
+
+psi_6mo_cs_file <- "~/Desktop/BABIES/data/github_scripts/psi_6mo_cs.csv"
+psi_6mo_long_file <- "~/Desktop/BABIES/data/github_scripts/psi_6mo_long.csv"
+
+source("/Volumes/mooddata/BABIES/Measures/R_scoring/babies_scoring/identify_outliers_histogram.R")
+```
+
+# Read in data 
+
+```{r}
+psi <-
+  read_csv(psi_6mo_cs_file) %>% 
+  select(-redcap_survey_identifier:-psi_timestamp, -psi_complete) %>% 
+  bind_rows(
+    read_csv(psi_6mo_long_file) %>% 
+      select(-redcap_survey_identifier:-psi_timestamp, -psi_complete)
+  ) %>% 
+  rename(ID = record_id)
+```
+
+# Score
+
+## recode
+
+raw PSI is coded so that higher scores mean LESS distress; thus, reverse score all items
+make lowest score = 0 
+```{r}
+psi <-
+  psi %>% 
+  mutate_at(
+    vars(-ID, -redcap_event_name),
+    funs(
+      . %>%
+        recode("5" = 0, "4" = 1, "3" = 2, "2" = 3, "1" = 4)
+    )
+  )
+```
+
+## score subscales
+```{r}
+psi <-
+  psi %>% 
+  mutate(
+    psi_pd = pmap_dbl(
+      select(., c(psi_1:psi_12)), #parental distress
+      function(...) mean(c(...), na.rm = TRUE)
+    ) * 12,
+    psi_cdi = pmap_dbl(
+      select(., c(psi_13:psi_24)),  #parent-child dysfunctional interaction
+      function(...) mean(c(...), na.rm = TRUE)
+    ) * 12,
+    psi_dc = pmap_dbl(
+      select(., c(psi_25:psi_36)),  #difficult child
+      function(...) mean(c(...), na.rm = TRUE)
+    ) * 12,
+    psi_total = pmap_dbl(
+      select(., c(psi_1:psi_36)),  #total
+      function(...) mean(c(...), na.rm = TRUE)
+    ) * 36
+  )
+```
+
+# Visualize distributions
+```{r}
+psi %>% 
+  identify_outliers_hist(psi_pd)
+
+psi %>% 
+  identify_outliers_hist(psi_cdi)
+
+psi %>% 
+  identify_outliers_hist(psi_dc)
+
+psi %>% 
+  identify_outliers_hist(psi_total)
+```
+
+

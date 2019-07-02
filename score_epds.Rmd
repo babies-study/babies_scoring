@@ -1,0 +1,63 @@
+---
+title: "Score EPDS"
+output: html_notebook
+---
+
+```{r}
+#Libraries
+library(tidyverse)
+
+#Parameters
+epds_preg_file <- "~/Desktop/BABIES/preg_hair_cortisol/data/epds_preg_20180729.csv"
+```
+
+```{r}
+epds <-
+  read_csv(epds_preg_file) %>%
+  rename(ID = record_id) %>%
+  mutate(
+    ID = as.integer(ID)
+  ) %>% 
+  select(
+    -redcap_event_name:-epds_timestamp,
+    -epds_complete
+  ) %>%
+  mutate_at(
+    vars(
+      epds_3,
+      epds_5:epds_10
+    ),
+    funs(
+      . %>%
+        recode(
+          "3" = 0,
+          "2" = 1,
+          "1" = 2,
+          "0" = 3
+        )
+    )
+  ) %>% 
+  group_by(ID) %>% 
+  mutate(
+    epds_total_preg = mean(
+      c(
+        epds_1, 
+        epds_2, 
+        epds_3, 
+        epds_4, 
+        epds_5, 
+        epds_6, 
+        epds_7,
+        epds_8,
+        epds_9,
+        epds_10
+      ),
+      na.rm = TRUE
+    ) * 10
+  ) %>% 
+  select(
+    ID, 
+    epds_total_preg
+  )
+```
+
