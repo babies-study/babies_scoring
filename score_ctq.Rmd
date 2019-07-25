@@ -1,0 +1,182 @@
+---
+title: "Score ctq"
+author: "Lucy King"
+output: html_notebook
+---
+
+```{r}
+#Libraries
+library(tidyverse)
+
+#Parameters
+ctq_crossectional_file <- "~/Desktop/BABIES/data/ctq_cs_20190725.csv"
+ctq_longitudinal_file <- "~/Desktop/BABIES/data/ctq_lg_20190725.csv"
+
+source("~/Desktop/BABIES/infant_scripts/babies_scoring/winsorize.R")
+source("~/Desktop/BABIES/infant_scripts/babies_scoring/identify_outliers_histogram.R")
+```
+
+# Read in data 
+```{r}
+ctq <-
+  read_csv(ctq_crossectional_file) %>% 
+  bind_rows(
+    read_csv(ctq_longitudinal_file)
+  ) %>% 
+  rename(ID = record_id) %>% 
+  mutate(ID = as.numeric(ID))
+```
+
+# Count missing items
+```{r}
+ctq <-
+  ctq %>% 
+  mutate(
+    n_ctq = pmap_dbl(
+      select(., c(ctq_1:ctq_25)),
+      function(...) sum(!is.na(c(...)), na.rm = TRUE)
+    )
+  )
+
+ctq <-
+  ctq %>% 
+  filter(n_ctq != 0)
+
+ctq %>% 
+  summarize(
+    min_items = min(n_ctq)
+  )
+```
+
+
+# Score ctq
+
+```{r}
+ctq <-
+  ctq %>% 
+  group_by(ID) %>% 
+  mutate(
+    ctq_emo_abuse = mean(
+      c(
+        ctq_1,
+        ctq_2,
+        ctq_3,
+        ctq_4,
+        ctq_5
+      ), na.rm = TRUE
+    ) * 5,
+    ctq_phys_abuse = mean(
+      c(
+        ctq_6,
+        ctq_7,
+        ctq_8,
+        ctq_9,
+        ctq_10
+      ), na.rm = TRUE
+    ) * 5,
+    ctq_sex_abuse = mean(
+      c(
+        ctq_11,
+        ctq_12,
+        ctq_13,
+        ctq_14,
+        ctq_15
+      ), na.rm = TRUE
+    ) * 5,
+    ctq_emo_neglect = mean(
+      c(
+        ctq_16,
+        ctq_17,
+        ctq_18,
+        ctq_19,
+        ctq_20
+      ), na.rm = TRUE
+    ) * 5,
+    ctq_phys_neglect = mean(
+      c(
+        ctq_21, 
+        ctq_22,
+        ctq_23,
+        ctq_24,
+        ctq_25
+      ), na.rm = TRUE
+    ) * 5,
+    ctq_total = sum(
+      ctq_emo_abuse,
+      ctq_phys_abuse,
+      ctq_sex_abuse,
+      ctq_emo_neglect,
+      ctq_phys_neglect
+    )
+  ) %>% 
+  ungroup()
+```
+
+
+# Histograms of raw data
+```{r}
+ctq %>% 
+  identify_outliers_hist(ctq_emo_abuse)
+
+ctq %>% 
+  identify_outliers_hist(ctq_phys_abuse)
+
+ctq %>% 
+  identify_outliers_hist(ctq_sex_abuse)
+
+ctq %>% 
+  identify_outliers_hist(ctq_emo_neglect)
+
+ctq %>% 
+  identify_outliers_hist(ctq_phys_neglect)
+
+ctq %>% 
+  identify_outliers_hist(ctq_total)
+```
+
+# Winsorize scores
+```{r}
+ctq <-
+  ctq %>% 
+  mutate(
+    ctq_emo_abuse_win = winsorize(ctq_emo_abuse, product = 3),
+    ctq_phys_abuse_win = winsorize(ctq_phys_abuse, product = 3),
+    ctq_sex_abuse_win = winsorize(ctq_sex_abuse, product = 3),
+    ctq_emo_neglect_win = winsorize(ctq_emo_neglect, product = 3),
+    ctq_phys_abuse_win = winsorize(ctq_phys_abuse, product = 3),
+    ctq_total_win = winsorize(ctq_total, product = 3)
+  )
+
+ctq %>% 
+  select(ctq_emo_abuse, ctq_emo_abuse_win) %>% 
+  arrange(desc(ctq_emo_abuse_win))
+```
+
+# Histograms of raw data
+```{r}
+ctq %>% 
+  ggplot(aes(ctq_emo_abuse_win)) +
+  geom_histogram()
+
+ctq %>% 
+  ggplot(aes(ctq_phys_abuse_win)) +
+  geom_histogram()
+
+ctq %>% 
+  ggplot(aes(ctq_sex_abuse_win)) +
+  geom_histogram()
+
+ctq %>% 
+  ggplot(aes(ctq_emo_neglect_win)) +
+  geom_histogram()
+
+
+ctq %>% 
+  ggplot(aes(ctq_phys_abuse_win)) +
+  geom_histogram()
+
+ctq %>% 
+  ggplot(aes(ctq_total_win)) +
+  geom_histogram()
+```
+
