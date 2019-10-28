@@ -8,9 +8,20 @@ output: html_notebook
 library(tidyverse)
 
 #Parameters
-epds_preg_file <- "~/Desktop/BABIES/preg_hair_cortisol/data/epds_preg_20180729.csv"
+
+## pregnancy file
+epds_preg_file <- ""
+
+## six-month retrospective files
+epds_cs_6mo_file <- "~/Desktop/BABIES/data/epds_cs_20191004.csv"
+epds_lg_6mo_file <- "~/Desktop/BABIES/data/epds_lg_20191004.csv"
+
+## functions
+source("~/Desktop/BABIES/infant_scripts/babies_scoring/winsorize.R")
+source("~/Desktop/BABIES/infant_scripts/babies_scoring/identify_outliers_histogram.R")
 ```
 
+# Score  EPDS collected in pregnancy (longitudinal participants only)
 ```{r}
 epds <-
   read_csv(epds_preg_file) %>%
@@ -22,6 +33,10 @@ epds <-
     -redcap_event_name:-epds_timestamp,
     -epds_complete
   ) %>%
+  mutate_at(
+    vars(epds_1:epds_10),
+    as.numeric
+  ) %>% 
   mutate_at(
     vars(
       epds_3,
@@ -54,10 +69,70 @@ epds <-
       ),
       na.rm = TRUE
     ) * 10
+  ) 
+  
+glimpse(epds6)
+```
+
+# Score  EPDS collected at 6 months (retrospective report for both cx and longitudinal participants)
+```{r}
+epds6 <-
+  read_csv(epds_cs_6mo_file) %>%
+  bind_rows(
+    read_csv(epds_lg_6mo_file)
+  ) %>% 
+  rename(ID = record_id) %>%
+  mutate(
+    ID = as.integer(ID)
   ) %>% 
   select(
-    ID, 
-    epds_total_preg
-  )
+    -redcap_event_name:-epds_timestamp,
+    -epds_complete
+  ) %>%
+  mutate_at(
+    vars(epds_1:epds_10),
+    as.numeric
+  ) %>% 
+  mutate_at(
+    vars(
+      epds_3,
+      epds_5:epds_10
+    ),
+    funs(
+      . %>%
+        recode(
+          "3" = 0,
+          "2" = 1,
+          "1" = 2,
+          "0" = 3
+        )
+    )
+  ) %>% 
+  group_by(ID) %>% 
+  mutate(
+    epds_total_6mo = mean(
+      c(
+        epds_1, 
+        epds_2, 
+        epds_3, 
+        epds_4, 
+        epds_5, 
+        epds_6, 
+        epds_7,
+        epds_8,
+        epds_9,
+        epds_10
+      ),
+      na.rm = TRUE
+    ) * 10
+  ) 
+```
+
+```{r}
+identify_outliers_hist(epds6, epds_total_6mo)
+```
+
+```{r}
+#write_csv(epds6, "~/Desktop/BABIES/data/epds_6mo_20191004.csv")
 ```
 

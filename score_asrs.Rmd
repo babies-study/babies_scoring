@@ -1,0 +1,51 @@
+---
+title: "Score ASRS"
+author: "Lucy King"
+date: "10/28/2019"
+output: html_document
+---
+
+```{r}
+#Libraries
+library(tidyverse)
+library(purrr)
+
+#Files
+asrs_cs_file <- "~/Desktop/BABIES/data/asrs_6mo_cs_20191028.csv"
+asrs_lg_file <- "~/Desktop/BABIES/data/asrs_6mo_lg_20191028.csv"
+```
+
+# Read in data
+```{r}
+asrs6 <-
+  read_csv(asrs_cs_file) %>% 
+  select(-redcap_survey_identifier:-asrs_timestamp) %>% 
+  bind_rows(
+    read_csv(asrs_lg_file) %>% 
+      select(-redcap_survey_identifier:-asrs_timestamp)
+  ) %>% 
+  filter(asrs_complete == 2) %>% 
+  rename(ID = record_id) %>% 
+  mutate(ID = as.numeric(ID)) %>% 
+  select(-asrs_complete)
+
+glimpse(asrs6)
+```
+```{r}
+asrs6 <-
+  asrs6 %>% 
+  mutate(
+    n_asrs = pmap_dbl(
+      select(., c(asrs_1:asrs_18)),
+      function(...) sum(!is.na(c(...)), na.rm = TRUE)
+    ), 
+    asrs_total = as.double(
+      pmap_dbl(
+        select(., c(asrs_1:asrs_18)),
+        function(...) mean(c(...), na.rm = TRUE)
+      ) * n_asrs
+    )
+  ) %>% 
+  select(-n_asrs)
+```
+
