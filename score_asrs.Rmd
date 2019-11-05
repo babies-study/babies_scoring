@@ -27,9 +27,12 @@ asrs6 <-
   filter(asrs_complete == 2) %>% 
   rename(ID = record_id) %>% 
   mutate(ID = as.numeric(ID)) %>% 
+  mutate_at(
+    vars(asrs_1:asrs_18),
+    funs(. - 1) #rescale so 1 = 0
+  ) %>% 
   select(-asrs_complete)
 
-glimpse(asrs6)
 ```
 ```{r}
 asrs6 <-
