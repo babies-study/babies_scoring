@@ -218,15 +218,6 @@ ibq %>%
   geom_smooth(method = "lm")
 ```
 
-```{r}
-ibq_efa <- 
-  ibq %>% 
-  select(act:voc, -fall_re)
-
-itsea_sub_corr <-
-  cor(itsea_subscales)
-```
-
 
 ```{r}
 write_csv(ibq, "~/Desktop/BABIES/lena_symptoms/data_final/ibq_scored_20190726.csv")
