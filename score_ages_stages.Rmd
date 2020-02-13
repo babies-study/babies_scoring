@@ -1,0 +1,192 @@
+---
+title: "Score Ages & Stages"
+author: "Lucy King"
+date: "2/12/2020"
+output: html_document
+---
+
+# Environment
+```{r}
+library(tidyverse)
+library(psych)
+
+
+asq_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/ages_stages/raw_data/ages_stages_6mo_cs_complete.csv"
+asq_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/ages_stages/raw_data/ages_stages_6mo_lg_complete.csv"
+```
+
+# Read in data
+```{r}
+asq <-
+  read_csv(asq_cs_file) %>% 
+  rename(ID = record_id) %>% 
+  mutate(ID = as.numeric(ID)) %>% 
+  bind_rows(
+    read_csv(asq_lg_file) %>% 
+      rename(ID = record_id) %>% 
+      mutate(ID = as.numeric(ID))
+  )
+```
+
+# Score data
+```{r}
+asq <-
+  asq %>% 
+  group_by(ID) %>% 
+  mutate(
+    asq_comm = mean(
+      c(
+        asq_23e3_1,
+        asq_23e3_2,
+        asq_23e3_3,
+        asq_23e3_4,
+        asq_23e3_5,
+        asq_23e3_6
+      ), na.rm = TRUE
+    ) * 6,
+    asq_grossmotor = mean(
+      c(
+        asq_23e3_7, 
+        asq_23e3_8, 
+        asq_23e3_9, 
+        asq_23e3_10, 
+        asq_23e3_11, 
+        asq_23e3_12
+      ), na.rm = TRUE
+    ) * 6,
+    asq_finemotor = mean(
+      c(
+        asq_23e3_13, 
+        asq_23e3_14, 
+        asq_23e3_15, 
+        asq_23e3_16, 
+        asq_23e3_17,
+        asq_23e3_18
+        ), na.rm = TRUE
+    ) * 6,
+    asq_prbsolv = mean(
+      c(
+        asq_23e3_19, 
+        asq_23e3_20, 
+        asq_23e3_21, 
+        asq_23e3_22, 
+        asq_23e3_23, 
+        asq_23e3_24
+      ), na.rm = TRUE
+    ) * 6,
+    asq_personsoc = mean(
+      c(
+        asq_23e3_25, 
+        asq_23e3_26, 
+        asq_23e3_27, 
+        asq_23e3_28, 
+        asq_23e3_29, 
+        asq_23e3_30
+      ), na.rm = TRUE
+    ) * 6
+  ) %>% 
+  ungroup()
+```
+
+# Reliability
+```{r}
+#communication
+asq %>% 
+  select(
+    asq_23e3_1,
+    asq_23e3_2,
+    asq_23e3_3,
+    asq_23e3_4,
+    asq_23e3_5,
+    asq_23e3_6
+  ) %>% 
+  alpha()
+
+#gross motor
+asq %>% 
+  select(
+    asq_23e3_7, 
+    asq_23e3_8, 
+    asq_23e3_9, 
+    asq_23e3_10, 
+    asq_23e3_11, 
+    asq_23e3_12
+  ) %>% 
+  alpha()
+
+
+#fine motor
+asq %>% 
+  select(
+    asq_23e3_13, 
+    asq_23e3_14, 
+    asq_23e3_15, 
+    asq_23e3_16, 
+    asq_23e3_17,
+    asq_23e3_18
+  ) %>% 
+  alpha()
+
+#problem solving
+asq %>% 
+  select(
+    asq_23e3_19, 
+    asq_23e3_20, 
+    asq_23e3_21, 
+    asq_23e3_22, 
+    asq_23e3_23, 
+    asq_23e3_24
+  ) %>% 
+  alpha()
+
+#personal social
+asq %>% 
+  select(
+    asq_23e3_25, 
+    asq_23e3_26, 
+    asq_23e3_27, 
+    asq_23e3_28, 
+    asq_23e3_29, 
+    asq_23e3_30
+  ) %>% 
+  alpha()
+```
+
+# Visualize
+```{r}
+asq %>% 
+  ggplot(aes(asq_comm)) +
+  geom_histogram()
+
+asq %>% 
+  ggplot(aes(asq_finemotor)) +
+  geom_histogram()
+
+asq %>% 
+  ggplot(aes(asq_grossmotor)) +
+  geom_histogram()
+
+asq %>% 
+  ggplot(aes(asq_prbsolv)) +
+  geom_histogram()
+
+asq %>% 
+  ggplot(aes(asq_personsoc)) +
+  geom_histogram()
+```
+
+```{r}
+asq_scored <-
+  asq %>% 
+  select(
+    ID,
+    asq_comm,
+    asq_grossmotor,
+    asq_finemotor,
+    asq_prbsolv,
+    asq_personsoc
+  )
+
+write_csv(asq_scored, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/ages_stages/asq_basic_complete_scored.csv")
+```
+
