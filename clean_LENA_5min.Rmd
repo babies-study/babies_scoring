@@ -518,7 +518,30 @@ lena_time_cl <-
   select(-ct_last_row, -ct_first_row) %>% 
   # remove observations froms times of day before first CT or after last CT
   filter(!is.na(time_day))
+```
 
+## Compute hourly maximums
+```{r}
+min(lena_time_cl$time_hours, na.rm = TRUE)
+max(lena_time_cl$time_hours, na.rm = TRUE)
+
+lena_hourly_max <- 
+  lena_time_cl %>% 
+  mutate(
+    time_hours_round = round(time_hours)
+  ) %>% 
+  group_by(ID, day, time_hours_round) %>% 
+  summarise(
+    awc_hour_sum = sum(AWC.Actual),
+    ctc_hour_sum = sum(CTC.Actual),
+    cvc_hour_sum = sum(CVC.Actual)
+  ) %>% 
+  group_by(ID, day) %>% 
+  summarise(
+    awc_hour_max = max(awc_hour_sum),
+    ctc_hour_max = max(ctc_hour_sum),
+    cvc_hour_max = max(cvc_hour_sum)
+  )
 ```
 
 ## Calculate rates and consistency during each phase of day and across each day
@@ -567,12 +590,14 @@ lena_time_day <-
     awc_prop = sum(awc_depend_time_day) / sum(((duration_time_day * 60) / 5))
   ) %>% 
   ungroup()
+  
 ```
 
 ## Merge with follow-up data
 ```{r}
 lena_final_lf <-
   lena_time_day %>% 
+  left_join(lena_hourly_max, by = c("ID", "day")) %>% 
   left_join(lena_followup, by = c("ID", "day")) %>% 
   mutate(
     day_type = wday(date_record),
@@ -644,6 +669,15 @@ lena_day1 <-
     ctc_rate = if_else(
       is.na(cvc_max_1), ctc_rate_2, ctc_rate_1
     ),
+    awc_hour_max = if_else(
+      is.na(awc_hour_max_1), awc_hour_max_2, awc_hour_max_2
+    ),
+    ctc_hour_max = if_else(
+      is.na(ctc_hour_max_1), ctc_hour_max_2, ctc_hour_max_2
+    ),
+    cvc_hour_max = if_else(
+      is.na(cvc_hour_max_1), cvc_hour_max_2, cvc_hour_max_2
+    ),
     day_type = if_else(
       is.na(cvc_max_1), day_type_2, day_type_1
     ),
@@ -696,6 +730,48 @@ identify_outliers_hist(lena_final_wf, ctc_prop_1)
 identify_outliers_hist(lena_final_wf, awc_prop_1)
 ```
 
+# LENA reliability
+```{r}
+lena_final_wf %>% 
+  filter(!is.na(ctc_max_2)) %>% 
+  select(
+    awc_rate_1,
+    awc_rate_2
+  ) %>% 
+  psych::ICC()
+
+lena_final_wf %>% 
+  filter(!is.na(ctc_max_2)) %>% 
+  select(
+    ctc_rate_1,
+    ctc_rate_2
+  ) %>% 
+  psych::ICC()
+
+lena_final_wf %>% 
+  filter(!is.na(ctc_max_2)) %>% 
+  select(
+    awc_hour_max_1,
+    awc_hour_max_2
+  ) %>% 
+  psych::ICC()
+
+lena_final_wf %>% 
+  filter(!is.na(ctc_max_2)) %>% 
+  select(
+    ctc_hour_max_1,
+    ctc_hour_max_2
+  ) %>% 
+  psych::ICC()
+
+lena_final_wf %>% 
+  filter(!is.na(ctc_max_2)) %>% 
+  select(
+    cvc_hour_max_1,
+    cvc_hour_max_2
+  ) %>% 
+  psych::ICC()
+```
 ## Write file 
 
 ```{r}

@@ -406,7 +406,6 @@ demo_lg_6mo <-
   )
 ```
 
-
 ## join all data across timepoints 
 ```{r}
 demo_lg <-
@@ -824,7 +823,6 @@ demo_lg <-
     -partner_in_home_t1,
     -partner_in_home_t2,
     -partner_in_home_t3,
-    -mom_dob
   ) 
 
 write_csv(
@@ -881,6 +879,7 @@ demo_6mo <-
     male,
     due_date,
     baby_dob,
+    mom_dob,
     gestational_weeks_birth,
     baby_race,
     baby_race_describe,
@@ -909,10 +908,43 @@ write_csv(
   demo_6mo, 
   "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/demo_6mo_cleaned_final.csv"
 )
-
 ```
 
 
+```{r}
+dob_sex_race <-
+  demo_lg %>% 
+  select(
+    ID,
+    baby_dob,
+    mom_dob,
+    male,
+    baby_latinx,
+    mom_latinx,
+    baby_race,
+    mom_race,
+    mom_race_describe
+  ) %>% 
+  bind_rows(
+    demo_6mo %>% 
+      select(
+        ID,
+        baby_dob,
+        mom_dob,
+        male,
+        baby_latinx,
+        mom_latinx,
+        baby_race,
+        mom_race
+      ) 
+  ) %>% 
+  distinct(ID, baby_dob, .keep_all = TRUE)
+
+write_csv(
+  dob_sex_race, 
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/dob_sex_race_final.csv"
+)
+```
 
   
     
