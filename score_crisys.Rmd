@@ -10,22 +10,14 @@ library(psych)
 library(corrr)
 
 #Paramaters
-#crisys_preg_file <- "~/Desktop/BABIES/lena_symptoms/data/crisys_preg_20190418.csv"
-crisys_preg_file <- "~/Desktop/lena_18mo_symptoms/Data/crisys_preg_20190202.csv"
-
-#crisys_nb_cs_file <- "~/Desktop/BABIES/lena_symptoms/data/crisys_nb_20190418.csv"
-crisys_nb_cs_file <- "~/Desktop/lena_18mo_symptoms/Data/crisys_nb_20190510.csv"
-
-#crisys_6mo_lg_file <- "~/Desktop/BABIES/lena_symptoms/data/crisys_6mo_long_20190418.csv" 
-crisys_6mo_lg_file <- "~/Desktop/lena_18mo_symptoms/Data/crisys_6mo_long_20190510.csv"
-
-#crisys_6mo_cs_file <- "~/Desktop/BABIES/lena_symptoms/data/crysis_6mo_cs_20190418.csv" 
-crisys_6mo_cs_file <- "~/Desktop/lena_18mo_symptoms/Data/crisys_6mo_cs_20190202.csv"
+crisys_preg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/raw_data/crisys_lg_preg_complete.csv"
+crisys_nb_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/raw_data/crisys_lg_nb_complete.csv"
+crisys_6mo_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/raw_data/crisys_lg_6mo_complete.csv"
+crisys_6mo_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/raw_data/crisys_cs_complete.csv"
 
 
 #Functions
-#source("~/Desktop/BABIES/lena_symptoms/lena_18mo_symptoms/winsorize.R")
-source("~/Desktop/lena_18mo_symptoms/winsorize.R")
+source("~/Box/lucy_king_files/BABIES/infant_scripts/babies_scoring/winsorize.R")
 
 ```
 
@@ -128,17 +120,244 @@ crisys <-
   ungroup()
 ```
 
+# Score crisys based on negative SES items 
 
 ```{r}
-crisys_wf <-
+crisys_ses_vars <-
   crisys %>% 
-  select(ID, timepoint, crisys_total, crisys_win, crisys_neg_total, crisys_neg_win) %>% 
-  gather(variable, value, crisys_total:crisys_neg_win) %>% 
-  unite(temp, timepoint, variable) %>% 
-  spread(temp, value)
+  select(
+    crisys_2:crisys_12,
+    crisys_66,
+    crisys_70
+  ) %>% 
+  names()
+
+crisys <-
+  crisys %>% 
+  mutate(
+    n_crisys_ses = pmap_dbl(
+        select(., crisys_ses_vars),
+        function(...) sum(!is.na(c(...)), na.rm = TRUE)
+      ), 
+    crisys_ses_total = as.double(
+      pmap_dbl(
+        select(., crisys_ses_vars),
+        function(...) mean(c(...), na.rm = TRUE)
+      ) * 13
+    ) 
+  )
+
+crisys <- 
+  crisys %>% 
+  group_by(timepoint) %>% 
+  mutate(
+    crisys_ses_win = winsorize(crisys_ses_total, product = 3)
+  ) %>% 
+  ungroup()
 ```
 
+# Reliability
 
+## Reliability for SES items
+```{r}
+crisys %>% 
+  filter(timepoint == "pregnancy") %>% 
+  select(
+    crisys_ses_vars,
+    #variables too missing to compute
+    -crisys_9,
+    -crisys_66,
+    -crisys_70
+  ) %>% 
+  psych::alpha()
+
+crisys %>% 
+  filter(timepoint == "neonatal") %>% 
+  select(
+    crisys_ses_vars
+  ) %>% 
+  psych::alpha()
+
+crisys %>% 
+  filter(timepoint == "sixmonth") %>% 
+  select(
+    crisys_ses_vars
+  ) %>% 
+  psych::alpha()
+```
+
+## Reliability for negative items
+```{r}
+# pregnancy
+crisys %>% 
+  filter(timepoint == "pregnancy") %>% 
+  select(
+    crisys_2,
+    crisys_3,
+    crisys_5:crisys_22,
+    crisys_24,
+    crisys_27:crisys_30,
+    crisys_32:crisys_54,
+    crisys_58:crisys_67,
+    crisys_70:crisys_71,
+    #variables too missing to compute
+    -crisys_9,
+    -crisys_36,
+    -crisys_42,
+    -crisys_61,
+    -crisys_24,
+    -crisys_47,
+    -crisys_52,
+    -crisys_66,
+    -crisys_70,
+    -crisys_71
+  ) %>% 
+  psych::alpha()
+
+# newborn
+crisys %>% 
+  filter(timepoint == "neonatal") %>% 
+  select(
+    crisys_2,
+    crisys_3,
+    crisys_5:crisys_22,
+    crisys_24,
+    crisys_27:crisys_30,
+    crisys_32:crisys_54,
+    crisys_58:crisys_67,
+    crisys_70:crisys_71,
+    #variables too missing to compute
+    -crisys_11,
+    -crisys_12,
+    -crisys_24,
+    -crisys_36,
+    -crisys_37,
+    -crisys_40,
+    -crisys_41,
+    -crisys_46,
+    -crisys_47,
+    -crisys_20,
+    -crisys_50,
+    -crisys_70,
+    -crisys_71
+  ) %>% 
+  psych::alpha()
+
+
+# 6 months
+crisys %>% 
+  filter(timepoint == "sixmonth") %>% 
+  select(
+    crisys_2,
+    crisys_3,
+    crisys_5:crisys_22,
+    crisys_24,
+    crisys_27:crisys_30,
+    crisys_32:crisys_54,
+    crisys_58:crisys_67,
+    crisys_70:crisys_71,
+    #variables too missing to compute
+    -crisys_46,
+    -crisys_47,
+    -crisys_70,
+    -crisys_71
+  ) %>% 
+  psych::alpha()
+```
+
+## Reliability for all items
+```{r}
+# pregnancy
+crisys %>% 
+  filter(timepoint == "pregnancy") %>% 
+  select(
+    crisys_1:crisys_72,
+    -crisys_9,
+    -crisys_36,
+    -crisys_42,
+    -crisys_61,
+    -crisys_24,
+    -crisys_47,
+    -crisys_52,
+    -crisys_66,
+    -crisys_70,
+    -crisys_71,
+    -crisys_68,
+    -crisys_69
+  ) %>% 
+  psych::alpha()
+
+# newborn
+crisys %>% 
+  filter(timepoint == "neonatal") %>% 
+  select(
+    crisys_1:crisys_72,
+    #variables too missing to compute
+    -crisys_11,
+    -crisys_12,
+    -crisys_24,
+    -crisys_36,
+    -crisys_37,
+    -crisys_40,
+    -crisys_41,
+    -crisys_46,
+    -crisys_47,
+    -crisys_20,
+    -crisys_50,
+    -crisys_70,
+    -crisys_71,
+    -crisys_68,
+    -crisys_69
+  ) %>% 
+  psych::alpha()
+
+
+# 6 months
+crisys %>% 
+  filter(timepoint == "sixmonth") %>% 
+  select(
+    crisys_1:crisys_72,
+    #variables too missing to compute
+    -crisys_46,
+    -crisys_47,
+    -crisys_70,
+    -crisys_71,
+    -crisys_69,
+    -crisys_24
+  ) %>% 
+  psych::alpha()
+```
+# Tidy data
+```{r}
+crisys <-
+  crisys %>% 
+  mutate(
+    timepoint = factor(
+      timepoint,
+      levels = c("pregnancy", "neonatal", "sixmonth")
+    )
+  )
+
+crisys_wf <-
+  crisys %>% 
+  select(
+    ID, 
+    timepoint, 
+    crisys_total, 
+    crisys_win, 
+    crisys_neg_total, 
+    crisys_neg_win,
+    crisys_ses_total,
+    crisys_ses_win
+    ) %>% 
+  gather(variable, value, crisys_total:crisys_ses_win) %>% 
+  unite(temp, timepoint, variable) %>% 
+  spread(temp, value) 
+```
+
+# Histograms
+
+## total score
 ```{r}
 crisys %>% 
   ggplot(aes(timepoint, crisys_total)) +
@@ -159,7 +378,6 @@ crisys %>%
   ggplot(aes(timepoint, crisys_total)) +
   geom_boxplot()
 
-
 crisys %>% 
   ggplot(aes(crisys_total)) +
   geom_histogram() +
@@ -169,9 +387,42 @@ crisys %>%
   ggplot(aes(crisys_win)) +
   geom_histogram() +
   facet_wrap(~timepoint)
-
 ```
+## ses score
+```{r}
+crisys %>% 
+  ggplot(aes(timepoint, crisys_ses_total)) +
+  geom_line(
+    aes(
+      timepoint, 
+      crisys_ses_total, 
+      group = ID
+    ),
+    color = "blue",
+    alpha = 1/4
+  ) +
+  theme(
+    legend.position = "none"
+  )
 
+crisys %>% 
+  ggplot(aes(timepoint, crisys_ses_total)) +
+  geom_boxplot()
+
+crisys %>% 
+  ggplot(aes(crisys_ses_total)) +
+  geom_histogram() +
+  facet_wrap(~timepoint)
+```
+# Test of differences in crisys by timepoint
+```{r}
+library(lme4)
+library(lmerTest)
+
+crisys_mod1 <- lmer(crisys_win ~ timepoint + (1|ID), data = crisys)
+summary(crisys_mod1)
+anova(crisys_mod1)
+```
 
 ```{r}
 crisys_6mo <-
@@ -181,25 +432,16 @@ crisys_6mo <-
       crisys_total_6mo = sixmonth_crisys_total,
       crisys_neg_total_6mo = sixmonth_crisys_neg_total,
       crisys_total_6mo_win = sixmonth_crisys_win,
-      crisys_neg_total_6mo_win = sixmonth_crisys_neg_win
+      crisys_neg_total_6mo_win = sixmonth_crisys_neg_win,
+      crisys_ses_total_6mo = sixmonth_crisys_ses_total,
+      crisys_ses_total_6mo_win = sixmonth_crisys_ses_win
     )
-  
-crisys_6mo %>% 
-  ggplot(aes(crisys_total_6mo)) +
-  geom_histogram(bins = 20)
-
-crisys_6mo <- 
-  winsorize(crisys_6mo, crisys_total_6mo) %>% 
-  rename(crisys_total_6mo_win = value)
-
-crisys_6mo %>% 
-  ggplot(aes(crisys_total_6mo_win)) +
-  geom_histogram(bins = 20)
-
-#write_csv(crisys_6mo, "~/Desktop/BABIES/lena_symptoms/fran_box_data/Data_20190413/crisys_6mo_20190430.csv")
-write_csv(crisys_6mo, "~/Desktop/lena_18mo_symptoms/Data/crisys_6mo_20190510.csv")
-
 ```
 
+```{r}
+write_csv(crisys_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_wf_complete.csv")
+
+write_csv(crisys, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_lf_complete.csv")
 ```
+
 

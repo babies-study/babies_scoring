@@ -1,0 +1,93 @@
+---
+title: "Score HOME SES"
+author: "Lucy King"
+date: "2/25/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+
+data_home <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/"
+
+home_cs_file <- paste0(data_home, "HOME/raw_data/HOME_cs_ses_cleaned_20200204.csv")
+home_lg_file <- paste0(data_home, "HOME/raw_data/HOME_lg_ses_cleaned_20200204.csv")
+```
+
+```{r}
+home <-
+  read_csv(home_cs_file) %>% 
+  mutate(record_id = as.numeric(record_id)) %>% 
+  bind_rows(
+    read_csv(home_lg_file) %>% 
+      mutate(record_id = as.numeric(record_id))
+  ) %>% 
+  rename(
+    ID = record_id,
+    paid_maternity_leave = maternity_leave___1, 
+    vaca_maternity_leave = maternity_leave___2,
+    unpaid_maternity_leave = maternity_leave___3,
+    disab_maternity_leave = maternity_leave___4,
+    no_maternity_leave = maternity_leave___5,
+    maternity_leave_wks = maternity_weeks,
+    paternity_leave_wks = paternity_weeks,
+    babycare_partner_hrs = babycare_partner_hours,
+    babycare_grandpar_hrs = est_hours_week2_dd7,
+    babycare_relative_hrs = est_hours_week2_21b,
+    babycare_friend_hrs = est_hours_week2_8fc, #friend or neighbor
+    babycare_nanny_hrs = est_hours_week2_f60, #babysitter/nanny,
+    babycare_daycare_hrs = est_hours_week2_698,
+    babycare_other_hrs = est_hours_week2_b83,
+    babycare_n_otherchild = num_otherchild,
+    babcare_n_caregivers = num_caregivers
+  ) %>% 
+  mutate(
+    pregwork_hours_txt = recode(
+      pregwork_hours,
+      "1" = ">50 hr/week",
+      "2" = "40-49 hr/week",
+      "3" = "30-39 hr/week",
+      "4" = "20-29 hr/week",
+      "5" = "10-19 hr/week",
+      "6" = "<10 hr/week",
+      .missing = "0 hr/week"
+    ),
+    pregwork_hours = recode(
+      pregwork_hours,
+      "1" = 60,
+      "2" = 50,
+      "3" = 40,
+      "4" = 30,
+      "5" = 20,
+      "6" = 10,
+      .missing = 0
+    ),
+    pregwork_change = recode(
+      pregwork_change,
+      "1" = "Hours increased in pregnancy",
+      "0" = "No change in hours",
+      "3" = "Hours decreased in pregnancy"
+    ),
+    work_return_txt = recode(
+      work_return, 
+      "0" = "No, I don't plan to return",
+      "2" = "No, but I will be returning",
+      "1" = "Yes, I've returned"
+    ),
+    work_return_6mo = recode(
+      work_return,
+      "0" = 0,
+      "2" = 0,
+      "1" = 1
+    ),
+    # child:caregiver ratio if child taken care of by someone else who takes care of other children
+    babycare_ratio = babycare_n_otherchild / babcare_n_caregivers
+  ) %>% 
+  filter(home_interview_complete == 2) %>% 
+  select(-home_interview_complete, -work_return)
+```
+
+```{r}
+write_csv(home, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/HOME/HOME_SES_cleaned_20200225.csv")
+```
+

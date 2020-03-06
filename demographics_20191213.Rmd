@@ -822,7 +822,7 @@ demo_lg <-
     -visit_date_t2,
     -partner_in_home_t1,
     -partner_in_home_t2,
-    -partner_in_home_t3,
+    -partner_in_home_t3
   ) 
 
 write_csv(
