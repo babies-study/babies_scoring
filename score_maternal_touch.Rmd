@@ -1,0 +1,127 @@
+---
+title: "Score maternal touch during SFP"
+author: "Lucy King"
+date: "4/5/2020"
+output: html_document
+---
+
+# Environment setup
+```{r}
+library(tidyverse)
+
+touch_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/SFP_mtouch_20200405.csv"
+```
+
+# Read in data
+```{r}
+t <- 
+  read_csv(touch_file) %>% 
+  filter(
+    Episode_episode == "P" |
+      Episode_episode == "R1" |
+      Episode_episode == "R2"
+  ) %>% 
+  rename(
+    ID = ID_idnum,
+    mtouch = Maternal_Touch_mtouch
+  ) %>% 
+  group_by(ID, Episode_episode) %>% 
+  mutate(
+    ep_dur = Episode_offset - Episode_onset,
+    touch_dur = Maternal_Touch_offset - Maternal_Touch_onset 
+  ) %>% 
+  ungroup()
+```
+
+# Amount unobservable
+```{r}
+# calculate time unobservable for each 
+t_9 <-
+  t %>% 
+  filter(mtouch == 9) %>% 
+  mutate(
+    unob_dur = Maternal_Touch_offset - Maternal_Touch_onset
+  ) %>% 
+  group_by(ID, Episode_episode) %>% 
+  summarise(
+    unob_dur = sum(unob_dur)
+  ) %>% 
+  ungroup()
+
+# merge with rest of data
+t <-
+  t %>% 
+  filter(mtouch != 9) %>% 
+  left_join(
+    t_9 %>% 
+      select(ID, Episode_episode, unob_dur), 
+    by = c("ID", "Episode_episode")
+  ) %>% 
+  mutate(
+    unob_dur = if_else(is.na(unob_dur), 0, unob_dur)
+  ) %>% 
+  group_by(ID, Episode_episode) %>% 
+  # adjust episode duration to remove time unobservable
+  mutate(
+    ep_dur = ep_dur - unob_dur
+  ) %>% 
+  ungroup()
+
+```
+
+# Calculate proportion of touch during each episode 
+```{r}
+t_lf <-
+  t %>% 
+  mutate(
+    touch_dur = touch_dur * mtouch
+  ) %>% 
+  group_by(ID, Episode_episode) %>% 
+  mutate(
+    touch_sum = sum(touch_dur, na.rm = TRUE),
+    touch_prop = touch_sum / ep_dur
+  ) %>% 
+  distinct(ID, Episode_episode, ep_dur, touch_prop) %>% 
+  rename(
+    episode = Episode_episode,
+    episode_duration = ep_dur 
+  ) %>% 
+  mutate(
+    episode_duration = episode_duration / 60000
+  ) %>% 
+  ungroup()
+```
+
+
+```{r}
+t_wf <-
+  t_lf %>% 
+  select(ID, episode, touch_prop) %>% 
+  spread(episode, touch_prop) %>% 
+  rename(
+    P_touch = P,
+    R1_touch = R1,
+    R2_touch = R2
+  ) %>% 
+  group_by(ID) %>% 
+  mutate(
+    mean_touch = mean(
+      c(
+        P_touch,
+        R1_touch,
+        R2_touch
+      ),
+      na.rm = TRUE
+    )
+  ) %>% 
+  ungroup()
+```
+
+# Save files
+```{r}
+write_csv(t_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/maternal_touch_wf_20200405.csv")
+
+write_csv(t_lf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/maternal_touch_lf_20200405.csv")
+```
+
+

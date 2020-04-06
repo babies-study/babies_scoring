@@ -177,10 +177,24 @@ shipley_scored <-
   )
 ```
 
+# Visualize
 ```{r}
 shipley_scored %>% 
   ggplot(aes(shipley_6mo_total)) +
   geom_histogram()
+```
+
+# Reliability
+```{r}
+shipley_scored %>% 
+  select(
+    shipley_1:shipley_40,
+    -shipley_1,
+    -shipley_4,
+    -shipley_18,
+    -shipley_39
+  ) %>% 
+  psych::alpha()
 ```
 
 ```{r}

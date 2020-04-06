@@ -1,0 +1,251 @@
+---
+title: "Clean and score infant affect, gaze, and maternal touch data"
+author: "Lucy King"
+date: "6/8/2018"
+output: html_document
+---
+
+```{r}
+##Libraries
+library(tidyverse)
+
+##Parameters
+
+infant_affect_file <- "~/Desktop/BABIES/infant_cortisol/data/SFP_20180803.csv"
+infant_touch_file <- "~/Desktop"
+```
+
+```{r}
+infant_affect <-
+  read_csv(infant_affect_file) %>% 
+  select(
+    ID = ID_idnum,
+    episode = Episode_episode,
+    onset = Episode_onset,
+    offset = Episode_offset,
+    affect = Affect_affect
+  ) %>% 
+  mutate(
+    episode_dur = (offset - onset) / 1000 #convert to seconds
+  )
+```
+
+```{r}
+infant_affect %>%
+  filter(!is.na(episode)) %>% 
+  distinct(ID, episode) %>% 
+  group_by(ID) %>% 
+  count(episode) %>% 
+  mutate( 
+    n_episode = sum(n)
+    ) %>% 
+  filter(n_episode != 5)
+```
+
+```{r}
+recode_affect <- function(affect_variable, affect_code) {
+  if_else(affect_variable == affect_code, 1, 0)
+}
+
+infant_affect <-
+  infant_affect %>% 
+  mutate(
+    hard_cry = recode_affect(affect, 1),
+    cry = recode_affect(affect, 2),
+    fuss = recode_affect(affect, 3),
+    neutral = recode_affect(affect, 4),
+    pos = recode_affect(affect, 5),
+    v_pos = recode_affect(affect, 6),
+    mix = recode_affect(affect, 7),
+    unobservable = recode_affect(affect, 9),
+    unclassified = if_else( #removing "unclassifiable", "unobservable", "autonomic indicator"
+      affect == 8 | 
+        affect == 10 , 
+      1, 0
+    )
+  ) 
+```
+
+```{r}
+infant_affect %>% 
+  count(unclassified) %>% 
+  mutate(prop_unclassified = n / sum(n))
+
+infant_affect %>% 
+  count(unobservable) %>% 
+  mutate(prop_unobservable = n / sum(n))
+
+infant_affect %>% 
+  group_by(ID) %>% 
+  mutate(
+    prop_unobservable = sum(unobservable) / episode_dur
+    ) %>% 
+  top_n(10, prop_unobservable) %>% 
+  distinct(ID, prop_unobservable) %>% 
+  arrange(desc(prop_unobservable))
+
+infant_affect <-
+  infant_affect %>% 
+  filter(unobservable == 0, !is.na(episode))
+```
+
+```{r}
+infant_affect <- 
+  infant_affect %>% 
+  group_by(ID, episode, episode_dur) %>%
+  summarise_at(
+    vars(hard_cry:unclassified),
+    funs(sum)
+  ) %>% 
+  mutate_at(
+    vars(hard_cry:unclassified),
+    funs((. / episode_dur) * 100)
+  ) %>% 
+  mutate(
+    distress = fuss + (2 * cry) + (3 * hard_cry) ,
+    positive = pos + (2 * v_pos)
+  ) %>% 
+  select(-episode_dur) %>% 
+  gather(variable, value, hard_cry:positive) %>%
+  unite(temp, episode, variable) %>%
+  spread(temp, value) %>% 
+  mutate(
+    mean_distress = mean(
+      c(
+        P_distress,
+        SF1_distress,
+        SF2_distress,
+        R1_distress,
+        R2_distress
+      ),
+      na.rm = TRUE
+    ),
+    mean_SF_distress = mean(
+      c(
+        SF1_distress,
+        SF2_distress
+      ),
+      na.rm = TRUE
+    ),
+    mean_R_distress = mean(
+      c(
+        R1_distress,
+        R2_distress
+      ),
+      na.rm = TRUE
+    ),
+    mean_positive = mean(
+      c(
+        P_positive,
+        SF1_positive,
+        SF2_positive,
+        R1_positive,
+        R2_positive
+      ),
+      na.rm = TRUE
+    ),
+    mean_SF_positive = mean(
+      c(
+        SF1_positive,
+        SF2_positive
+      ),
+      na.rm = TRUE
+    ),
+    mean_PR_positive = mean(
+      c(
+        P_positive,
+        R1_positive,
+        R2_positive 
+      ),
+      na.rm = TRUE
+    )
+  ) %>% 
+  ungroup()
+
+write.csv(infant_affect, "~/Desktop/BABIES/asl_infant_affect/data/infant_affect_20180725.csv")
+```
+
+```{r}
+infant_affect %>% 
+  gather(
+    episode, 
+    distress,
+    c(
+    P_distress,
+    SF1_distress,
+    SF2_distress,
+    R1_distress,
+    R2_distress 
+    )
+  ) %>% 
+  select(
+    episode,
+    distress
+  ) %>% 
+  mutate(
+    episode = str_replace(episode, "_distress", ""),
+    episode = factor(
+      episode,
+      levels = c("P", "SF1", "R1", "SF2", "R2")
+    )
+  ) %>% 
+  ggplot(aes(episode, distress, group = factor(ID))) + 
+  geom_line(aes(color = factor(ID))) +
+  theme_minimal() +
+  theme(
+    legend.position = "none"
+  )
+
+ggsave("~/Desktop/BABIES/asl_infant_affect/episode_ID_distress.jpeg")
+
+```
+
+```{r}
+distress_lf <-
+  infant_affect %>% 
+  ungroup %>% 
+  gather(
+    episode, 
+    distress,
+    c(
+    P_distress,
+    SF1_distress,
+    SF2_distress,
+    R1_distress,
+    R2_distress 
+    )
+  ) %>% 
+  select(
+    ID,
+    episode,
+    distress
+  ) %>% 
+  mutate(
+    episode = str_replace(episode, "_distress", ""),
+    episode_num = recode(
+      episode,
+      "P" = 1,
+      "SF1" = 2,
+      "R1" = 3,
+      "SF2" = 4,
+      "R2" = 5
+    )
+  ) 
+
+library(lcmm)
+
+lcmm_distress_2 <-
+  lcmm(distress ~ episode_num, random = ~episode_num, subject = "ID", mixture = ~episode_num, ng = 2, idiag = TRUE, data = distress_lf, link = "linear")
+
+summary(lcmm_distress_2)
+postprob(lcmm_distress_2)
+
+lcmm_distress_3 <-
+  lcmm(distress ~ episode_num, random = ~episode_num, subject = "ID", mixture = ~episode_num, ng = 3, idiag = TRUE, data = distress_lf, link = "linear")
+
+summary(lcmm_distress_3)
+postprob(lcmm_distress_3)
+
+```
+
+

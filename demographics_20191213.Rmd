@@ -769,8 +769,8 @@ demo_lg <-
   group_by(ID) %>% 
   mutate(
     ppl_in_home_tot_t1 = ppl_in_home_adults_t1 + ppl_in_home_allchild_t1,
-    ppl_in_home_tot_t2 = ppl_in_home_adults_t1 + ppl_in_home_allchild_t2,
-    ppl_in_home_tot_t3 = ppl_in_home_adults_t1 + ppl_in_home_allchild_t3
+    ppl_in_home_tot_t2 = ppl_in_home_adults_t2 + ppl_in_home_allchild_t2,
+    ppl_in_home_tot_t3 = ppl_in_home_adults_t3 + ppl_in_home_allchild_t3
   ) %>% 
   ungroup() %>% 
   mutate_at(
