@@ -9,7 +9,7 @@ output: html_document
 ```{r}
 library(tidyverse)
 
-touch_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/SFP_mtouch_20200405.csv"
+touch_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/SFP_mtouch_complete.csv"
 ```
 
 # Read in data
@@ -117,11 +117,30 @@ t_wf <-
   ungroup()
 ```
 
+# Visualize
+```{r}
+t_lf %>% 
+  ggplot(aes(episode_duration)) +
+  geom_histogram()
+
+# shorter episodes are due to removal of unobservable time 
+t_lf %>% 
+  filter(episode_duration < 1.5)
+
+t_lf %>% 
+  ggplot(aes(episode, touch_prop)) +
+  geom_boxplot()
+
+t_lf %>% 
+  ggplot(aes(touch_prop, fill = episode)) +
+  geom_density(alpha = 1/2)
+```
+
 # Save files
 ```{r}
-write_csv(t_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/maternal_touch_wf_20200405.csv")
+write_csv(t_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/maternal_touch_wf_complete.csv")
 
-write_csv(t_lf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/maternal_touch_lf_20200405.csv")
+write_csv(t_lf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/maternal_touch_lf_complete.csv")
 ```
 
 

@@ -1,0 +1,80 @@
+---
+title: "Score Early Childhood Screening Assessment (ECSA)"
+author: "Lucy King"
+date: "4/14/2020"
+output: html_document
+---
+
+# Environment 
+```{r}
+library(tidyverse)
+
+# Files
+ecsa_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/ECSA/raw_data/mo18_survey_cs_20200414.csv"
+ecsa_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/ECSA/raw_data/mo18_survey_lg_20200414.csv"
+```
+
+# Read in data 
+```{r}
+ecsa <-
+  read_csv(ecsa_cs_file) %>% 
+  mutate(record_id = as.numeric(record_id)) %>% 
+  bind_rows(read_csv(ecsa_lg_file)) %>% 
+  select(
+    ID = record_id,
+    ecsa_1:ecsa_36
+  )
+```
+
+# Score
+The sum of the circled numbers of items 1-36, with a maximum score of 72. A score >=18 suggests that the child may be at higher risk of having a mental health problem. The ECSA is not valid if more than 2 child items are skipped.
+
+```{r}
+ecsa_vars <-
+  ecsa %>% 
+  select(starts_with("ecsa")) %>% 
+  names()
+
+ecsa <-
+  ecsa %>% 
+  # count number missing
+  mutate(
+    n_missing_ecsa = sum(
+      is.na(
+        c(ecsa_vars)
+      )
+    ),
+    ecsa_total = pmap_dbl(
+      select(., c(ecsa_vars)),
+      function(...) sum(c(...), na.rm = TRUE)
+    ),
+    # remove if missing more than 2 items
+    ecsa_total = if_else(
+      n_missing_ecsa > 2, NA_real_, ecsa_total
+    ),
+    ecsa_above_cutoff = if_else(
+      ecsa_total >= 18, "above", "below"
+    )
+  )
+
+ecsa %>% 
+  count(n_missing_ecsa)
+
+ecsa %>% 
+  count(ecsa_above_cutoff)
+```
+
+# Reliability
+```{r}
+ecsa %>% 
+  select(ecsa_vars) %>% 
+  psych::alpha()
+
+ecsa
+```
+
+# Export data
+```{r}
+write_csv(ecsa, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/ECSA/ecsa_18mo_scored_20200414.csv")
+```
+

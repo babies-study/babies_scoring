@@ -12,7 +12,7 @@ library(tidyverse)
 library(corrr)
 
 #Parameters
-sfp_care_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/PCIRS_SFP_MASTER_20200319.xlsx"
+sfp_care_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/PCIRS_SFP_MASTER_complete.xlsx"
 
 get_final_ratings <- function(r1_rating, r2_rating, r_consensus) {
       final = if_else(is.na(r1_rating), r2_rating, r1_rating)
@@ -258,6 +258,6 @@ sfp_care_wf %>%
 ```
 
 ```{r export data}
-write_csv(sfp_care_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/PCIRS_sfp_wf_20200319.csv")
+write_csv(sfp_care_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/PCIRS_sfp_wf_complete.csv")
 ```
 
