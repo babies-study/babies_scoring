@@ -13,8 +13,8 @@ library(GPArotation)
 
 # Files
 
-q_18month_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/survey_18mo_cs_complete.csv"
-q_18month_long_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/survey_18mo_lg_20200210.csv"
+q_18month_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_cs_complete.csv"
+q_18month_long_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20200414.csv"
 demographics_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/demo_6mo_cleaned_final.csv"
 
 theme_lena <-
@@ -34,14 +34,22 @@ theme_lena <-
 ```{r}
 itsea <-
   read_csv(q_18month_cs_file) %>% 
-  rename(ID = record_id) %>% 
-  mutate(ID = as.integer(ID)) %>% 
-  select(-redcap_event_name:-questionnaires_18mo_timestamp) %>% 
+  rename(
+    ID = record_id,
+    survey_date = questionnaires_18mo_timestamp
+  ) %>% 
+  mutate(
+    ID = as.integer(ID)
+  ) %>% 
+  select(-redcap_event_name:-redcap_survey_identifier) %>% 
   bind_rows(
     read_csv(q_18month_long_file) %>% 
-      rename(ID = record_id) %>% 
+      rename(
+        ID = record_id,
+        survey_date = month_survey_timestamp
+        ) %>% 
       mutate(ID = as.integer(ID)) %>%
-      select(-redcap_event_name:-month_survey_timestamp) 
+      select(-redcap_event_name:-redcap_survey_identifier) 
   ) %>% 
   select(ID, survey_date, itsea_a2:itsea_e11) %>% 
   left_join(
@@ -807,12 +815,6 @@ itsea %>%
     x = "Subscale score"
   )
 
-#ggsave(
-#  "~/Desktop/BABIES/lena_symptoms/manuscript/itsea_subscale_hist.png",
-#  width = 7,
-#  height = 5
-#)
-
 
 itsea %>% 
   select(itsea_activity:itsea_social) %>% 
@@ -938,13 +940,18 @@ loadings_plot_data %>%
 itsea_scored <-
   itsea %>% 
   mutate(
-    survey_date = parse_date_time(survey_date, orders = c("ymd", "mdy")),
+    survey_date = parse_date_time(
+      survey_date, 
+      orders = c("mdy HM")
+    ),
     baby_dob = parse_date_time(baby_dob, orders = c("ymd", "mdy")),
-    baby_age_18month = (baby_dob %--% survey_date) / months(1),
-    baby_age_18month_int = as.integer(baby_age_18month)
-  ) 
+    baby_age_18mo = (baby_dob %--% survey_date) / months(1)
+  ) %>% 
+  select(
+    -baby_dob
+  )
 
-write_csv(itsea, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/itsea_scored_20200218.csv")
+write_csv(itsea, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/itsea_scored_20200420.csv")
 
 ```
 
