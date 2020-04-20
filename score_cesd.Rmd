@@ -10,18 +10,19 @@ output: html_document
 library(tidyverse)
 
 #Parameters
-cesd_preg_file <- "~/Desktop/BABIES/preg_hair_cortisol/data/cesd_preg_20180730.csv"
+cesd_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/raw_data/cesd_lg_complete.csv"
+cesd_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/raw_data/cesd_cs_complete.csv"
 ```
 
-
+# Read in and score data
 ```{r}
-cesd <-
+cesd_lg <-
   read_csv(
-    cesd_preg_file
+    cesd_lg_file
   ) %>% 
   rename(ID = record_id) %>%
   select(
-    -redcap_event_name:-cesd_timestamp,
+    -redcap_survey_identifier:-cesd_timestamp,
     -cesd_complete
   ) %>%
   mutate_at(
@@ -33,7 +34,7 @@ cesd <-
   )  %>% 
   group_by(ID) %>%
   mutate(
-    cesd_total_preg = mean(
+    cesd_total = mean(
       c(
         cesd_1,
         cesd_2,
@@ -59,6 +60,163 @@ cesd <-
       na.rm = TRUE
     ) * 20
   ) %>% 
-  select(ID, cesd_total_preg) 
+  ungroup()
+```
+
+```{r}
+cesd_6 <-
+  read_csv(cesd_cs_file)  %>% 
+  rename(ID = record_id) %>%
+  mutate(
+    ID = as.numeric(ID)
+  ) %>% 
+  select(
+    -redcap_survey_identifier:-cesd_timestamp,
+    -cesd_complete,
+    -cesd_date
+  ) %>%
+  mutate_at(
+    vars(cesd_4, cesd_8, cesd_12, cesd_16),
+    funs(
+      . %>%
+        recode("3" = 0, "2" = 1, "1" = 2, "0" = 3)
+    )
+  )  %>% 
+  group_by(ID) %>%
+  mutate(
+    redcap_event_name = "sixmonth_arm_1",
+    cesd_total = mean(
+      c(
+        cesd_1,
+        cesd_2,
+        cesd_3,
+        cesd_4,
+        cesd_5,
+        cesd_6,
+        cesd_7,
+        cesd_8,
+        cesd_9,
+        cesd_10,
+        cesd_11,
+        cesd_12,
+        cesd_13,
+        cesd_14,
+        cesd_15,
+        cesd_16,
+        cesd_17,
+        cesd_18,
+        cesd_19,
+        cesd_20
+      ),
+      na.rm = TRUE
+    ) * 20
+  ) %>% 
+  ungroup()
+```
+
+```{r}
+cesd <-
+  cesd_lg %>% 
+  bind_rows(cesd_6)
+```
+
+# Reliability
+```{r}
+# pregnancy assessment
+cesd %>% 
+  filter(redcap_event_name == "pregnancy_arm_1") %>% 
+  select(
+    cesd_1:cesd_20
+  ) %>% 
+  psych::alpha()
+
+# newborn assessment
+cesd %>% 
+  filter(redcap_event_name == "neonatal_arm_1") %>% 
+  select(
+    cesd_1:cesd_20
+  ) %>% 
+  psych::alpha()
+
+# 6-month assessment
+cesd %>% 
+  filter(redcap_event_name == "sixmonth_arm_1") %>% 
+  select(
+    cesd_1:cesd_20
+  ) %>% 
+  psych::alpha()
+```
+
+# Convert to wide form
+```{r}
+cesd_wf <- 
+  cesd %>% 
+  select(
+    ID,
+    redcap_event_name,
+    cesd_total
+  ) %>% 
+  mutate(
+    redcap_event_name = recode(
+      redcap_event_name,
+      "pregnancy_arm_1" = "T1",
+      "neonatal_arm_1" = "T2",
+      "sixmonth_arm_1" = "T3"
+    )
+  ) %>% 
+  spread(redcap_event_name, cesd_total) %>% 
+  rename(
+    cesd_t1 = T1,
+    cesd_t2 = T2,
+    cesd_t3 = T3
+  ) %>% 
+  mutate(
+    cesd_t1_concern = if_else(
+      cesd_t1 >= 16,
+      "clinical concern", "none"
+    ),
+    cesd_t2_concern = if_else(
+      cesd_t2 >= 16,
+      "clinical concern", "none"
+    ),
+    cesd_t3_concern = if_else(
+      cesd_t3 >= 16,
+      "clinical concern", "none"
+    )
+  )
+```
+
+# Distributions and Descriptives
+
+```{r}
+cesd %>% 
+  group_by(redcap_event_name) %>% 
+  summarise_at(
+    vars(cesd_total),
+    funs(mean, sd, min, max), na.rm = TRUE
+  )
+```
+
+```{r}
+cesd_wf %>% 
+  filter(!is.na(cesd_t1_concern)) %>% 
+  count(cesd_t1_concern) %>% 
+  mutate(per = n/sum(n))
+
+cesd_wf %>% 
+  filter(!is.na(cesd_t2_concern)) %>% 
+  count(cesd_t2_concern) %>% 
+  mutate(per = n/sum(n))
+
+cesd_wf %>% 
+  filter(!is.na(cesd_t3_concern)) %>% 
+  count(cesd_t3_concern) %>% 
+  mutate(per = n/sum(n))
+```
+
+```{r}
+cesd %>% 
+  ggplot(aes(cesd_total, fill = redcap_event_name)) +
+  geom_density(alpha = 1/2)
 ```
 
