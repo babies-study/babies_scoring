@@ -12,6 +12,8 @@ library(tidyverse)
 #Parameters
 cesd_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/raw_data/cesd_lg_complete.csv"
 cesd_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/raw_data/cesd_cs_complete.csv"
+cesd_18mo_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_cs_complete.csv"
+cesd_18mo_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20200414.csv"
 ```
 
 # Read in and score data
@@ -32,7 +34,7 @@ cesd_lg <-
         recode("3" = 0, "2" = 1, "1" = 2, "0" = 3)
     )
   )  %>% 
-  group_by(ID) %>%
+  group_by(ID, redcap_event_name) %>%
   mutate(
     cesd_total = mean(
       c(
@@ -115,9 +117,63 @@ cesd_6 <-
 ```
 
 ```{r}
+cesd_18 <-
+  read_csv(cesd_18mo_cs_file) %>% 
+  select(record_id, starts_with("cesd")) %>% 
+  mutate(record_id = as.numeric(record_id)) %>% 
+  bind_rows(
+    read_csv(cesd_18mo_lg_file) %>% 
+      select(record_id, starts_with("cesd"))
+  ) %>% 
+  rename(ID = record_id) %>% 
+  mutate_at(
+    vars(cesd18_4, cesd18_8, cesd18_12, cesd18_16),
+    funs(
+      . %>%
+        recode("3" = 0, "2" = 1, "1" = 2, "0" = 3)
+    )
+  )  %>% 
+  group_by(ID) %>%
+  mutate(
+    redcap_event_name = "eighteenmonth",
+    cesd_total = mean(
+      c(
+        cesd18_1,
+        cesd18_2,
+        cesd18_3,
+        cesd18_4,
+        cesd18_5,
+        cesd18_6,
+        cesd18_7,
+        cesd18_8,
+        cesd18_9,
+        cesd18_10,
+        cesd18_11,
+        cesd18_12,
+        cesd18_13,
+        cesd18_14,
+        cesd18_15,
+        cesd18_16,
+        cesd18_17,
+        cesd18_18,
+        cesd18_19,
+        cesd18_20
+      ),
+      na.rm = TRUE
+    ) * 20
+  ) %>% 
+  rename_at(
+    vars(starts_with("cesd")),
+    funs(str_replace(., "18_", "_"))
+  ) %>% 
+  ungroup()
+```
+
+```{r}
 cesd <-
   cesd_lg %>% 
-  bind_rows(cesd_6)
+  bind_rows(cesd_6) %>% 
+  bind_rows(cesd_18)
 ```
 
 # Reliability
@@ -145,6 +201,14 @@ cesd %>%
     cesd_1:cesd_20
   ) %>% 
   psych::alpha()
+
+# 18-month assessment
+cesd %>% 
+  filter(redcap_event_name == "eighteenmonth") %>% 
+  select(
+    cesd_1:cesd_20
+  ) %>% 
+  psych::alpha()
 ```
 
 # Convert to wide form
@@ -161,14 +225,16 @@ cesd_wf <-
       redcap_event_name,
       "pregnancy_arm_1" = "T1",
       "neonatal_arm_1" = "T2",
-      "sixmonth_arm_1" = "T3"
+      "sixmonth_arm_1" = "T3",
+      "eighteenmonth" = "T4"
     )
   ) %>% 
   spread(redcap_event_name, cesd_total) %>% 
   rename(
     cesd_t1 = T1,
     cesd_t2 = T2,
-    cesd_t3 = T3
+    cesd_t3 = T3,
+    cesd_t4 = T4
   ) %>% 
   mutate(
     cesd_t1_concern = if_else(
@@ -181,6 +247,10 @@ cesd_wf <-
     ),
     cesd_t3_concern = if_else(
       cesd_t3 >= 16,
+      "clinical concern", "none"
+    ),
+    cesd_t4_concern = if_else(
+      cesd_t4 >= 16,
       "clinical concern", "none"
     )
   )
@@ -212,11 +282,21 @@ cesd_wf %>%
   filter(!is.na(cesd_t3_concern)) %>% 
   count(cesd_t3_concern) %>% 
   mutate(per = n/sum(n))
+
+cesd_wf %>% 
+  filter(!is.na(cesd_t4_concern)) %>% 
+  count(cesd_t4_concern) %>% 
+  mutate(per = n/sum(n))
 ```
 
 ```{r}
 cesd %>% 
   ggplot(aes(cesd_total, fill = redcap_event_name)) +
   geom_density(alpha = 1/2)
+```
+
+```{r}
+write_csv(cesd_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_wf_20200507.csv")
+write_csv(cesd, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_lf_20200507.csv")
 ```
 

@@ -10,7 +10,7 @@ library(tidyverse)
 library(corrplot)
 
 ##Parameters
-free_play_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/PCIRS_FreePlay_MASTER_20200319.xlsx"
+free_play_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/PCIRS_FreePlay_MASTER_20200507.xlsx"
 ```
 
 
@@ -26,7 +26,6 @@ final_scores <- function(Second_Rater, var_r1, var_r2) {
 
 free_play <-
   readxl::read_xlsx(free_play_file) %>% 
-  filter(Episode != 5) %>% 
   mutate_at(
     vars(Sens_R2:NegMood_R2, Sens_R1:NegMood_R1),
     funs(as.double)
@@ -236,7 +235,7 @@ free_play_means %>%
 
 # Select final data 
 ```{r}
-fp_final <-
+fp_final_lf_10min <-
   free_play %>% 
   select(
     ID,
@@ -248,8 +247,25 @@ fp_final <-
     funs(str_replace(., "fin", "FP"))
   )
 
-fp_final_wf <-
-  fp_final %>% 
+# subset to include only first 8 min given subset completed intervention in last 2 min
+fp_final_lf_8min <-
+  free_play %>% 
+  filter(Episode != "5") %>% 
+  select(
+    ID,
+    episode = Episode,
+    sens_fin:detach_fin
+  ) %>% 
+  rename_at(
+    vars(contains("fin")),
+    funs(str_replace(., "fin", "FP"))
+  )
+```
+
+
+```{r}
+fp_final_wf_8min <-
+  fp_final_lf_8min %>% 
   group_by(ID) %>% 
   summarise_at(
     vars(sens_FP:detach_FP), 
@@ -257,8 +273,22 @@ fp_final_wf <-
   )
 ```
 
+
 ```{r}
-write_csv(fp_final_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_wf_20200319.csv")
+write_csv(
+  fp_final_lf_10min, 
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_lf_10min_20200507.csv"
+)
+
+write_csv(
+  fp_final_lf_8min, 
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_lf_10min_20200507.csv"
+)
+
+write_csv(
+  fp_final_wf_8min, 
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_wf_8min_20200507.csv"
+)
 ```
 
 
