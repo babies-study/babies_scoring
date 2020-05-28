@@ -10,16 +10,17 @@ library(tidyverse)
 library(corrplot)
 
 ##Parameters
-free_play_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/PCIRS_FreePlay_MASTER_20200507.xlsx"
+free_play_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/PCIRS_FreePlay_MASTER_20200508.xlsx"
 ```
 
 
 ```{r}
-final_scores <- function(Second_Rater, var_r1, var_r2) {
+final_scores <- function(Second_Rater, First_Rater, var_r1, var_r2) {
   
   case_when(
     (Second_Rater == "LK" | Second_Rater == "ER") ~ var_r2,
     is.na(Second_Rater) ~ var_r1,
+    is.na(First_Rater) ~ var_r2,
     TRUE ~ var_r1
   )
 }
@@ -35,15 +36,16 @@ free_play <-
     funs(str_to_lower)
   ) %>% 
   mutate(
-    sens_fin = final_scores(Second_Rater, sens_r1, sens_r2),
-    intrus_fin = final_scores(Second_Rater, intrus_r1, intrus_r2),
-    posreg_fin = final_scores(Second_Rater, posreg_r1, posreg_r2),
-    stim_fin = final_scores(Second_Rater, stim_r1, stim_r2),
-    negreg_fin = final_scores(Second_Rater, negreg_r1, negreg_r2),
-    negmood_fin = final_scores(Second_Rater, negmood_r1, negmood_r2),
-    posmood_fin = final_scores(Second_Rater, posmood_r1, posmood_r2),
-    detach_fin = final_scores(Second_Rater, detach_r1, detach_r2)
+    sens_fin = final_scores(Second_Rater, First_Rater, sens_r1, sens_r2),
+    intrus_fin = final_scores(Second_Rater, First_Rater, intrus_r1, intrus_r2),
+    posreg_fin = final_scores(Second_Rater, First_Rater, posreg_r1, posreg_r2),
+    stim_fin = final_scores(Second_Rater, First_Rater, stim_r1, stim_r2),
+    negreg_fin = final_scores(Second_Rater, First_Rater, negreg_r1, negreg_r2),
+    negmood_fin = final_scores(Second_Rater, First_Rater, negmood_r1, negmood_r2),
+    posmood_fin = final_scores(Second_Rater, First_Rater, posmood_r1, posmood_r2),
+    detach_fin = final_scores(Second_Rater, First_Rater, detach_r1, detach_r2)
   ) 
+
 ```
 
 # Calculate reliability 
