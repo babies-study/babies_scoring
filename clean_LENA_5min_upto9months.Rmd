@@ -516,7 +516,17 @@ lena_time_cl <-
   ) %>% 
   dplyr::select(-ct_last_row, -ct_first_row) %>% 
   # remove observations froms times of day before first CT or after last CT
-  filter(!is.na(time_day))
+  filter(!is.na(time_day)) %>% 
+  ungroup()
+```
+
+```{r}
+# average times of first and last CT
+lena_time_cl %>% 
+  summarize_at(
+    vars(ct_first_time, ct_last_time),
+    funs(mean, sd, min, max)
+  )
 ```
 
 ## Compute hourly maximums
@@ -567,7 +577,7 @@ lena_time_day <-
     cvc_time_rate = cvc_time_day / duration_time_day,
     ctc_time_prop = ctc_depend_time_day / ((duration_time_day * 60) / 5),
     awc_time_prop = awc_depend_time_day / ((duration_time_day * 60) / 5),
-    #calculation of N 5-minute segments will sometimes result in proportion values >1, correct to = 1,
+    #calculation of N 5-minute segments will sometimes result in proportion values slightly >1, correct to = 1,
     ctc_time_prop = if_else(
       ctc_time_prop > 1,
       1, ctc_time_prop
@@ -604,7 +614,8 @@ lena_final_lf <-
   group_by(ID, day) %>% 
   mutate(
     duration = sum(duration_time_day)
-  )
+  ) %>% 
+  ungroup()
 ```
 
 ## Create final wide-format data frames with basic variables
@@ -629,7 +640,7 @@ lena_final_wf <-
     -awc_time_day,
     -duration_time_day
   ) %>% 
-  gather(variable, value, age:day_type, duration) %>% 
+  gather(variable, value, age:duration) %>% 
   unite(temp, variable, day) %>% 
   spread(temp, value) %>% 
   mutate_at(
@@ -641,6 +652,27 @@ lena_final_wf <-
     ),
     as.double
   ) %>% 
+  ungroup() %>% 
+  left_join(
+    lena_final_lf %>% 
+      filter(day == 1) %>% 
+      dplyr::select(ID, date_record) %>% 
+      distinct(ID, date_record) %>% 
+      rename(date_record_1 = date_record), 
+    by = "ID"
+  ) %>% 
+  left_join(
+    lena_final_lf %>% 
+      filter(day == 2) %>% 
+      dplyr::select(ID, date_record) %>% 
+      distinct(ID, date_record) %>% 
+      rename(date_record_2 = date_record),
+    by = "ID"
+  ) %>% 
+  group_by(ID) %>% 
+  mutate(
+    lena_weeks_btwn = (date_record_1 %--% date_record_2) / weeks(1)
+  ) %>% 
   ungroup()
 ```
 
@@ -650,6 +682,9 @@ lena_day1 <-
   lena_final_wf %>% 
   #if missing day 1, use day 2
   mutate(
+    date_record = if_else(
+      is.na(date_record_1), date_record_2, date_record_1
+    ),
     age = if_else(
       is.na(age_1), age_2, age_1
     ),
@@ -739,68 +774,91 @@ identify_outliers_hist(lena_final_wf, awc_prop_1)
 ```
 
 # LENA reliability
+
 ```{r}
-lena_final_wf %>% 
+identify_outliers_hist(lena_final_wf, lena_weeks_btwn)
+
+lena_rel <-
+  lena_final_wf %>% 
+  filter(!is.na(ctc_max_2))
+```
+
+```{r}
+lena_rel %>% 
   filter(!is.na(ctc_max_2)) %>% 
   dplyr::select(
     awc_rate_1,
     awc_rate_2
   ) %>% 
   psych::ICC()
+
+cor.test(lena_rel$awc_rate_1, lena_rel$awc_rate_2)
 ```
 ```{r}
-lena_final_wf %>% 
+lena_rel %>% 
   filter(!is.na(ctc_max_2)) %>% 
   dplyr::select(
     ctc_rate_1,
     ctc_rate_2
   ) %>% 
   psych::ICC()
+
+cor.test(lena_rel$ctc_rate_1, lena_rel$ctc_rate_2)
 ```
 ```{r}
-lena_final_wf %>% 
+lena_rel %>% 
   filter(!is.na(ctc_max_2)) %>% 
   dplyr::select(
     awc_hour_max_1,
     awc_hour_max_2
   ) %>% 
   psych::ICC()
+
+cor.test(lena_rel$awc_hour_max_1, lena_rel$awc_hour_max_2)
 ```
 ```{r}
-lena_final_wf %>% 
+lena_rel %>% 
   filter(!is.na(ctc_max_2)) %>% 
   dplyr::select(
     ctc_hour_max_1,
     ctc_hour_max_2
   ) %>% 
   psych::ICC()
+
+cor.test(lena_rel$ctc_hour_max_1, lena_rel$ctc_hour_max_2)
 ```
 ```{r}
-lena_final_wf %>% 
+lena_rel %>% 
   filter(!is.na(ctc_max_2)) %>% 
   dplyr::select(
     cvc_hour_max_1,
     cvc_hour_max_2
   ) %>% 
   psych::ICC()
+
+cor.test(lena_rel$cvc_hour_max_1, lena_rel$cvc_hour_max_2)
 ```
 ```{r}
-lena_final_wf %>% 
+lena_rel %>% 
   filter(!is.na(ctc_max_2)) %>% 
   dplyr::select(
     ctc_prop_1,
     ctc_prop_2
   ) %>% 
   psych::ICC()
+
+cor.test(lena_rel$ctc_prop_1, lena_rel$ctc_prop_2)
 ```
 ```{r}
-lena_final_wf %>% 
+lena_rel %>% 
   filter(!is.na(ctc_max_2)) %>% 
   dplyr::select(
     awc_prop_1,
     awc_prop_2
   ) %>% 
   psych::ICC()
+
+cor.test(lena_rel$awc_prop_1, lena_rel$awc_prop_2)
 ```
 ## Write file 
 

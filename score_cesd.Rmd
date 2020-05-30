@@ -23,7 +23,7 @@ cesd_lg <-
     cesd_lg_file
   ) %>% 
   rename(ID = record_id) %>%
-  select(
+  dplyr::select(
     -redcap_survey_identifier:-cesd_timestamp,
     -cesd_complete
   ) %>%
@@ -72,7 +72,7 @@ cesd_6 <-
   mutate(
     ID = as.numeric(ID)
   ) %>% 
-  select(
+  dplyr::select(
     -redcap_survey_identifier:-cesd_timestamp,
     -cesd_complete,
     -cesd_date
@@ -119,11 +119,11 @@ cesd_6 <-
 ```{r}
 cesd_18 <-
   read_csv(cesd_18mo_cs_file) %>% 
-  select(record_id, starts_with("cesd")) %>% 
+  dplyr::select(record_id, starts_with("cesd")) %>% 
   mutate(record_id = as.numeric(record_id)) %>% 
   bind_rows(
     read_csv(cesd_18mo_lg_file) %>% 
-      select(record_id, starts_with("cesd"))
+      dplyr::select(record_id, starts_with("cesd"))
   ) %>% 
   rename(ID = record_id) %>% 
   mutate_at(
@@ -181,7 +181,7 @@ cesd <-
 # pregnancy assessment
 cesd %>% 
   filter(redcap_event_name == "pregnancy_arm_1") %>% 
-  select(
+  dplyr::select(
     cesd_1:cesd_20
   ) %>% 
   psych::alpha()
@@ -189,7 +189,7 @@ cesd %>%
 # newborn assessment
 cesd %>% 
   filter(redcap_event_name == "neonatal_arm_1") %>% 
-  select(
+  dplyr::select(
     cesd_1:cesd_20
   ) %>% 
   psych::alpha()
@@ -197,7 +197,7 @@ cesd %>%
 # 6-month assessment
 cesd %>% 
   filter(redcap_event_name == "sixmonth_arm_1") %>% 
-  select(
+  dplyr::select(
     cesd_1:cesd_20
   ) %>% 
   psych::alpha()
@@ -205,7 +205,7 @@ cesd %>%
 # 18-month assessment
 cesd %>% 
   filter(redcap_event_name == "eighteenmonth") %>% 
-  select(
+  dplyr::select(
     cesd_1:cesd_20
   ) %>% 
   psych::alpha()
@@ -215,7 +215,7 @@ cesd %>%
 ```{r}
 cesd_wf <- 
   cesd %>% 
-  select(
+  dplyr::select(
     ID,
     redcap_event_name,
     cesd_total

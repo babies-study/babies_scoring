@@ -41,7 +41,7 @@ itsea <-
   mutate(
     ID = as.integer(ID)
   ) %>% 
-  select(-redcap_event_name:-redcap_survey_identifier) %>% 
+  dplyr::select(-redcap_event_name:-redcap_survey_identifier) %>% 
   bind_rows(
     read_csv(q_18month_long_file) %>% 
       rename(
@@ -49,12 +49,12 @@ itsea <-
         survey_date = month_survey_timestamp
         ) %>% 
       mutate(ID = as.integer(ID)) %>%
-      select(-redcap_event_name:-redcap_survey_identifier) 
+      dplyr::select(-redcap_event_name:-redcap_survey_identifier) 
   ) %>% 
-  select(ID, survey_date, itsea_a2:itsea_e11) %>% 
+  dplyr::select(ID, survey_date, itsea_a2:itsea_e11) %>% 
   left_join(
     read_csv(demographics_file) %>% 
-      select(ID, male, baby_dob),
+      dplyr::select(ID, male, baby_dob),
     by = "ID"
   )
 ```
@@ -410,7 +410,7 @@ itsea <-
 ```{r}
 # activity
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a2, 
     itsea_a4, 
     itsea_b8, 
@@ -424,7 +424,7 @@ itsea %>%
 ```{r}
 # aggression
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a28, 
     itsea_a30, 
     itsea_a33, 
@@ -445,7 +445,7 @@ itsea %>%
 ```{r}
 # depression
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a9, 
     itsea_a39, 
     itsea_a40, 
@@ -462,7 +462,7 @@ itsea %>%
 ```{r}
 # empathy
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a22, 
     itsea_b51, 
     itsea_b56, 
@@ -477,7 +477,7 @@ itsea %>%
 ```{r}
 # GAD
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a3, 
     itsea_a12, 
     itsea_a35, 
@@ -494,7 +494,7 @@ itsea %>%
 ```{r}
 # play
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a25, 
     itsea_a31, 
     itsea_b25, 
@@ -508,7 +508,7 @@ itsea %>%
 ```{r}
 # negative emotionality
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a7, 
     itsea_a21, 
     itsea_a23, 
@@ -529,7 +529,7 @@ itsea %>%
 ```{r}
 # pro-social
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a10, 
     itsea_a13, 
     itsea_a15, 
@@ -548,7 +548,7 @@ itsea %>%
 ```{r}
 # internalizing
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a9, 
     itsea_a39, 
     itsea_a40, 
@@ -574,7 +574,7 @@ itsea %>%
 ```{r}
 # externalizing
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a2, 
     itsea_a4, 
     itsea_b8, 
@@ -601,7 +601,7 @@ itsea %>%
 ```{r}
 #total symptoms 
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a2, 
     itsea_a4, 
     itsea_b8, 
@@ -659,7 +659,7 @@ itsea %>%
 ```{r}
 #total competence
 itsea %>% 
-  select(
+  dplyr::select(
     itsea_a25, 
     itsea_a31, 
     itsea_b25, 
@@ -789,14 +789,14 @@ itsea %>%
 # Visualizing subscale scores
 ```{r}
 itsea %>% 
-  select(itsea_activity:itsea_social) %>% 
+  dplyr::select(itsea_activity:itsea_social) %>% 
   gather(itsea_subscale, score, itsea_activity:itsea_social) %>% 
   ggplot(aes(score, color = itsea_subscale)) +
   geom_freqpoly(bins = 5, size = 2, alpha = 1/2) +
   theme_minimal()
 
 itsea %>% 
-  select(
+  dplyr::select(
     Activity = itsea_activity,
     Aggression = itsea_agress,
     Depression = itsea_depp,
@@ -817,7 +817,7 @@ itsea %>%
 
 
 itsea %>% 
-  select(itsea_activity:itsea_social) %>% 
+  dplyr::select(itsea_activity:itsea_social) %>% 
   gather(itsea_subscale, score, itsea_activity:itsea_social) %>% 
   ggplot(aes(score)) +
   geom_histogram(bins = 12) +
@@ -831,7 +831,7 @@ itsea %>%
 itsea_subscales <- 
   itsea %>% 
   arrange(ID) %>% 
-  select( 
+  dplyr::select( 
     itsea_activity:itsea_social
   ) 
 
@@ -845,7 +845,7 @@ fa.parallel(itsea_subscales)
 itsea_fa2 <- fa(
   itsea_subscales, 
   nfactors = 2, 
-  rotate = "varimax"
+  rotate = "oblique"
   )
 itsea_fa2
 itsea_fa2$Vaccounted
@@ -874,14 +874,14 @@ order <-
   ungroup() %>%
   arrange(desc(factor), abs(loading)) %>%
   mutate(order = 1:length(levels(factor(loadings$measure)))) %>%
-  select(measure, order)
+  dplyr::select(measure, order)
   
 # get percent shared variance explained
 shared_var <- itsea_fa2$Vaccounted %>%
   data.frame() %>%
   rownames_to_column("stat") %>%
   filter(stat == "Proportion Var") %>%
-  select(-stat) %>%
+  dplyr::select(-stat) %>%
   gather(factor, var) %>%
   mutate(factor = as.character(factor(factor, labels = factor_names))) %>%
   mutate(var = paste0(factor, "\n(", round(var, 2)*100, "% var.)"))
@@ -931,7 +931,9 @@ loadings_plot_data %>%
     axis.text.x = element_text(size = 17)
   )
 
-
+ggsave(
+  "~/Box/lucy_king_files/BABIES/lena_symptoms/manuscript/dev_science/plots/itsea_EFA.png"
+  )
 ```
 
 ## Export data
@@ -947,7 +949,7 @@ itsea_scored <-
     baby_dob = parse_date_time(baby_dob, orders = c("ymd", "mdy")),
     baby_age_18mo = (baby_dob %--% survey_date) / months(1)
   ) %>% 
-  select(
+  dplyr::select(
     -baby_dob
   )
 
