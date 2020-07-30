@@ -14,8 +14,8 @@ library(GPArotation)
 # Files
 
 q_18month_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_cs_complete.csv"
-q_18month_long_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20200414.csv"
-demographics_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/demo_6mo_cleaned_final.csv"
+q_18month_long_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20200729.csv"
+demographics_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/dob_sex_race_final.csv"
 
 theme_lena <-
   theme_minimal() +
@@ -953,7 +953,7 @@ itsea_scored <-
     -baby_dob
   )
 
-write_csv(itsea, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/itsea_scored_20200420.csv")
+write_csv(itsea, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/itsea_scored_20200729.csv")
 
 ```
 

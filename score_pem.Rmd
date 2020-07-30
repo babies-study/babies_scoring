@@ -1,19 +1,20 @@
 ---
-title: "Score the Parental Empathy Measure"
+title: "Score the Parental Empathy Measure (PEM)"
 author: "Lucy King"
 date: "1/22/2018"
 output: html_document
 ---
 
+# Set up environment
 ```{r}
 #Libraries
 library(tidyverse)
 
 #Parameters
-pem_cs_file <- "~/Desktop/BABIES/neglect_perspective/data/BABIES6Months_pem_20180916.csv"
-pem_long_file <- "~/Desktop/BABIES/neglect_perspective/data/LongitudinalBABIES_pem_20180916.csv"
+pem_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/PEM/raw_data/pem_cs_complete.csv"
+pem_long_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/PEM/raw_data/pem_lg_complete.csv"
 ```
-
+# Read in data
 ```{r}
 pem <-
   read_csv(pem_cs_file) %>% 
@@ -40,14 +41,14 @@ pem <-
         ID = as.numeric(ID)
       )
   )
-
 ```
 
 
-
+# Score PEM
 ```{r}
 pem <- 
   pem %>% 
+  # reverse code items
   mutate_at(
     vars(
       pem_2, 
@@ -70,8 +71,9 @@ pem <-
     )
   )  %>%
   group_by(ID) %>% 
+  # score cognitive empathy
   mutate(
-    pem_cogem = mean(
+    pem_cog_empath = mean(
       c(
         pem_1, 
         pem_6, 
@@ -90,7 +92,8 @@ pem <-
       ),
       na.rm = TRUE
     ) * 14,
-    pem_affem = mean(
+    # score affective empathy
+    pem_aff_empath = mean(
       c(
         pem_5, 
         pem_13, 
@@ -106,6 +109,7 @@ pem <-
       ),
       na.rm = TRUE
     ) * 11,
+    # total score
     pem_total = mean(
       c(
         pem_1,
@@ -141,13 +145,14 @@ pem <-
 
 ```
 
+# Distributions
 ```{r}
 pem %>% 
-  ggplot(aes(pem_cogem)) +
+  ggplot(aes(pem_cog_empath)) +
   geom_histogram(binwidth = 2)
 
 pem %>% 
-  ggplot(aes(pem_affem)) +
+  ggplot(aes(pem_aff_empath)) +
   geom_histogram(binwidth = 2)
 
 pem %>% 
@@ -155,38 +160,81 @@ pem %>%
   geom_histogram(binwidth = 5)
 ```
 
+# Reliability
 ```{r}
-pem <-
-  pem %>% 
-  mutate(
-    pem_cogem_win = case_when(
-      pem_cogem  >  mean(pem_cogem, na.rm = TRUE) + 
-        (3 * sd(pem_cogem, na.rm = TRUE)) ~ mean(pem_cogem, na.rm = TRUE) + 
-        (3 * sd(pem_cogem, na.rm = TRUE)),
-      pem_cogem <  mean(pem_cogem, na.rm = TRUE) - 
-        (3 * sd(pem_cogem, na.rm = TRUE)) ~ mean(pem_cogem, na.rm = TRUE) - 
-        (3 * sd(pem_cogem, na.rm = TRUE)),
-      TRUE ~ pem_cogem
-    ),
-    pem_total_win = case_when(
-      pem_total  >  mean(pem_total, na.rm = TRUE) + 
-        (3 * sd(pem_total, na.rm = TRUE)) ~ mean(pem_total, na.rm = TRUE) + 
-        (3 * sd(pem_total, na.rm = TRUE)),
-      pem_total <  mean(pem_total, na.rm = TRUE) - 
-        (3 * sd(pem_total, na.rm = TRUE)) ~ mean(pem_total, na.rm = TRUE) - 
-        (3 * sd(pem_total, na.rm = TRUE)),
-      TRUE ~ pem_total
-    )
-  )
+pem %>% 
+  select(
+    pem_1, 
+    pem_6, 
+    pem_17, 
+    pem_12, 
+    pem_8, 
+    pem_10, 
+    pem_4, 
+    pem_15, 
+    pem_20, 
+    pem_7, 
+    pem_23, 
+    pem_13, 
+    pem_24, 
+    pem_2
+  ) %>% 
+  psych::alpha()
+```
+```{r}
+pem %>% 
+  select(
+    pem_5, 
+    pem_13, 
+    pem_14, 
+    pem_18, 
+    pem_21, 
+    pem_9, 
+    pem_3, 
+    pem_19, 
+    pem_22, 
+    pem_16, 
+    pem_25
+  ) %>% 
+  psych::alpha()
 ```
 
 ```{r}
 pem %>% 
-  ggplot(aes(pem_cogem_win)) +
-  geom_histogram(binwidth = 2)
+  select(
+    pem_1,
+    pem_2, 
+    pem_3, 
+    pem_4, 
+    pem_5, 
+    pem_6, 
+    pem_7,  
+    pem_8,	
+    pem_9, 	
+    pem_10,	
+    pem_11, 
+    pem_12,	
+    pem_13,	
+    pem_14,	
+    pem_15,	
+    pem_16,	
+    pem_17,	
+    pem_18,	
+    pem_19,	
+    pem_20,	
+    pem_21,	
+    pem_22,	
+    pem_23,	
+    pem_24,	
+    pem_25
+  ) %>% 
+  psych::alpha()
+```
 
-pem %>% 
-  ggplot(aes(pem_total_win)) +
-  geom_histogram(binwidth = 5)
+```{r}
+write_csv(
+  pem, 
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/PEM/pem_scored_complete.csv"
+)
 ```
 

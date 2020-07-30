@@ -1,0 +1,323 @@
+---
+title: "Score IRI and IRI-PE"
+author: "Lucy King"
+date: "7/30/2020"
+output: html_document
+---
+
+# Set up environment
+```{r}
+library(tidyverse)
+
+home <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/IRI_IRI_PE/"
+iri_cs_file <- paste0(home, "raw_data/IRI_cs_complete.csv")
+iri_lg_file <- paste0(home, "raw_data/IRI_lg_complete.csv")
+iri_pe_cs_file <- paste0(home, "raw_data/IRI_PE_cs_complete.csv")
+iri_pe_lg_file <- paste0(home, "raw_data/IRI_PE_lg_complete.csv")
+```
+
+# Read in data 
+
+Note the IRI-PE was only collected from participants who completed the MAMA scan.
+```{r}
+iri <-
+  read_csv(iri_cs_file) %>% 
+  select(-redcap_event_name:-iri_timestamp) %>% 
+  mutate(record_id = as.numeric(record_id)) %>% 
+  bind_rows(
+    read_csv(iri_lg_file) %>% 
+      select(-redcap_event_name:-iri_timestamp)
+  ) %>% 
+  select(-contains("complete"))
+
+iri_pe <- 
+  read_csv(iri_pe_cs_file) %>% 
+  select(-redcap_event_name:-iripe_timestamp) %>% 
+  mutate(record_id = as.numeric(record_id)) %>% 
+  bind_rows(
+    read_csv(iri_pe_lg_file) %>% 
+      select(-redcap_event_name:-iripe_timestamp)
+  ) %>% 
+  select(-contains("complete")) %>% 
+  filter(!is.na(iripe_1))
+
+iri <-
+  iri %>% 
+  left_join(iri_pe, by = "record_id") %>% 
+  rename(ID = record_id)
+```
+
+# Score
+
+## IRI
+```{r}
+iri <- 
+  iri %>% 
+  mutate_at(
+    vars(
+      iri_3, 
+      iri_4, 
+      iri_7,
+      iri_12,
+      iri_13,
+      iri_14,
+      iri_15,
+      iri_18,
+      iri_19
+    ),
+    funs(
+      . %>%
+        recode("4" = 0, "3" = 1, "2" = 2, "1" = 3, "0" = 4)
+    )
+  ) %>% 
+  group_by(ID) %>% 
+  mutate(
+    iri_persp = mean(
+      c(
+        iri_3,
+        iri_8,
+        iri_11,
+        iri_15,
+        iri_21,
+        iri_25,
+        iri_28
+      ),
+      na.rm = TRUE
+    ) * 7,
+    iri_fantasy = mean(
+      c(
+        iri_1,
+        iri_5,
+        iri_7,
+        iri_12,
+        iri_16,
+        iri_23,
+        iri_26
+      ),
+      na.rm = TRUE
+    ) * 7,
+    iri_empath = mean(
+      c(
+        iri_2,
+        iri_4,
+        iri_9,
+        iri_14,
+        iri_18,
+        iri_20,
+        iri_22
+      ),
+      na.rm = TRUE
+    ) * 7,
+    iri_perdis = mean(
+      c(
+        iri_6,
+        iri_10,
+        iri_13,
+        iri_17,
+        iri_19,
+        iri_24,
+        iri_27
+      ),
+      na.rm = TRUE
+    ) * 7
+  ) %>% 
+  ungroup()
+```
+
+## IRI-PE
+```{r}
+iri <- 
+  iri %>% 
+  mutate_at(
+    # put on same scale as IRI (as in original version)
+    vars(iripe_1:iripe_21),
+    funs(
+      . %>% 
+        recode("5" = 4, "4" = 3, "3" = 2, "2" = 1, "1" = 0)
+    )
+  ) %>% 
+  mutate_at(
+    vars(
+      iripe_2,
+      iripe_3,
+      iripe_9,
+      iripe_10,
+      iripe_11,
+      iripe_13,
+      iripe_14
+    ),
+    funs(
+      . %>%
+        recode("4" = 0, "3" = 1, "2" = 2, "1" = 3, "0" = 4)
+    )
+  ) %>% 
+  group_by(ID) %>% 
+  mutate(
+    iripe_persp = mean(
+      c(
+        iripe_2,
+        iripe_5,
+        iripe_8,
+        iripe_11,
+        iripe_16,
+        iripe_19,
+        iripe_21
+      ),
+      na.rm = TRUE
+    ) * 7,
+    iripe_empath = mean(
+      c(
+        iripe_1,
+        iripe_3,
+        iripe_6,
+        iripe_10,
+        iripe_13,
+        iripe_15,
+        iripe_17
+      ),
+      na.rm = TRUE
+    ) * 7,
+    iripe_perdis = mean(
+      c(
+        iripe_4,
+        iripe_7,
+        iripe_9,
+        iripe_12,
+        iripe_14,
+        iripe_18,
+        iripe_20
+      ),
+      na.rm = TRUE
+    ) * 7
+  ) %>% 
+  ungroup()
+```
+
+# Distributions
+```{r}
+iri %>% 
+  dplyr::select(iri_persp:iri_perdis) %>% 
+  gather(iri_subscale, iri_score, iri_persp:iri_perdis) %>% 
+  ggplot(aes(iri_score)) +
+  geom_histogram(bins = 12) +
+  theme_minimal() +
+  facet_wrap(.~iri_subscale)
+
+iri %>% 
+  dplyr::select(iripe_persp:iripe_perdis) %>% 
+  gather(iri_subscale, iri_pe_score, iripe_persp:iripe_perdis) %>% 
+  ggplot(aes(iri_pe_score)) +
+  geom_histogram(bins = 12) +
+  theme_minimal() +
+  facet_wrap(.~iri_subscale, nrow = 2)
+```
+
+# Reliability
+
+## IRI
+```{r}
+# perspective taking
+iri %>%
+  select(
+    iri_3,
+    iri_8,
+    iri_11,
+    iri_15,
+    iri_21,
+    iri_25,
+    iri_28
+  ) %>% 
+  psych::alpha()
+```
+```{r}
+# fantasy
+iri %>% 
+  select(
+    iri_1,
+    iri_5,
+    iri_7,
+    iri_12,
+    iri_16,
+    iri_23,
+    iri_26
+  ) %>% 
+  psych::alpha()
+```
+```{r}
+# empathic concern
+iri %>% 
+  select(
+    iri_2,
+    iri_4,
+    iri_9,
+    iri_14,
+    iri_18,
+    iri_20,
+    iri_22
+  ) %>% 
+  psych::alpha()
+```
+```{r}
+# personal distress
+iri %>% 
+  select(
+    iri_6,
+    iri_10,
+    iri_13,
+    iri_17,
+    iri_19,
+    iri_24,
+    iri_27
+  ) %>% 
+  psych::alpha()
+```
+
+## IRI-PE
+```{r}
+# perspective taking
+iri %>% 
+  select(
+    iripe_2, 
+    iripe_5,
+    iripe_8,
+    iripe_11,
+    iripe_16,
+    iripe_19,
+    iripe_21
+  ) %>% 
+  psych::alpha()
+```
+```{r}
+# empathic concern
+iri %>% 
+  select(
+    iripe_1,
+    iripe_3,
+    iripe_6, # low correlation with total 
+    iripe_10, 
+    iripe_13,
+    iripe_15,
+    iripe_17
+  ) %>% 
+  psych::alpha()
+```
+```{r}
+# personal distress
+iri %>% 
+  select(
+    iripe_4,
+    iripe_7,
+    iripe_9,
+    iripe_12,
+    iripe_14,
+    iripe_18,
+    iripe_20
+  ) %>% 
+  psych::alpha()
+```
+
+# Export data
+```{r}
+write_csv(iri, paste0(home, "iri_iri_pe_complete_scored.csv"))
+```
+
