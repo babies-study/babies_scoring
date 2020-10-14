@@ -1,46 +1,41 @@
 ---
-title: "Score the MNBS"
+title: "Score MNBS"
+author: "Lucy King"
+date: "10/9/2020"
 output: html_document
 ---
 
+# Set up environment
 ```{r}
-#Libraries
 library(tidyverse)
 
-#Parameters
-mnbs_6mo_file <- "~/Desktop/BABIES/neglect_perspective/data/BABIES6Months_mnbs_20180916.csv"
-mnbs_long_file <- "~/Desktop/BABIES/neglect_perspective/data/LongitudinalBABIES_mnbs_20180916.csv"
+mnbs_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/MNBS/raw_data/mnbs_cs_raw.csv"
+mnbs_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/MNBS/raw_data/mnbs_lg_raw.csv"
 ```
 
+# Read in data
 ```{r}
 mnbs <-
-  read_csv(mnbs_6mo_file) %>% 
-  select(
-    -redcap_event_name:-mnbs_timestamp,
-    -mnbs_complete
-  ) %>% 
-  rename(ID = record_id) %>% 
-  mutate(ID = as.integer(ID)) %>% 
+  read_csv(mnbs_cs_file) %>% 
+  mutate(record_id = as.numeric(record_id)) %>% 
+  dplyr::select(-redcap_event_name:-mnbs_timestamp) %>% 
   bind_rows(
-    read_csv(mnbs_long_file) %>% 
-      select(
-        -redcap_event_name:-mnbs_timestamp,
-        -mnbs_complete
-      ) %>% 
-      rename(ID = record_id) %>% 
-      mutate(ID = as.integer(ID)) 
-  )
+    read_csv(mnbs_lg_file) %>% 
+      dplyr::select(-redcap_event_name:-mnbs_timestamp)
+  ) %>% 
+  filter(mnbs_complete == 2) %>% 
+  dplyr::select(-mnbs_complete) %>% 
+  rename(ID = record_id)
 ```
 
+# Score
 ```{r}
-mnbs <- 
+mnbs <-
   mnbs %>% 
   mutate_at(
-    vars(
-      mnbs_2:mnbs_9
-    ),
+    vars(-ID),
     funs(
-      . %>%
+      . %>% 
         recode(
           "4" = 3,
           "3" = 2,
@@ -63,37 +58,34 @@ mnbs <-
         mnbs_9
       ),
       na.rm = TRUE
-    ) * 8,
-    mnbs_cognitive = mean(
-      c(
-        mnbs_2,
-        mnbs_3
-      ),
-      na.rm = TRUE
-    ) * 2,
-    mnbs_supervisory = mean(
-      c(
-        mnbs_4,
-        mnbs_5
-      ),
-      na.rm = TRUE
-    ) * 2,
-    mnbs_emotional = mean(
-      c(
-        mnbs_6,
-        mnbs_7
-      ),
-      na.rm = TRUE
-    ) * 2,
-    mnbs_physical = mean(
-      c(
-        mnbs_8,
-        mnbs_9
-      ),
-      na.rm = TRUE
-    ) * 2 
+    ) * 8
+  )
+```
+
+# Reliability
+```{r}
+mnbs %>% 
+  dplyr::select(
+    mnbs_2,
+    mnbs_3,
+    mnbs_4,
+    mnbs_5,
+    mnbs_6,
+    mnbs_7,
+    mnbs_8,
+    mnbs_9
   ) %>% 
-  ungroup()
-  
+  psych::alpha()
+```
+
+# Distribution
+```{r}
+mnbs %>% 
+  ggplot(aes(mnbs_total)) +
+  geom_histogram()
+```
+# Export data
+```{r}
+write_csv(mnbs, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/MNBS/mnbs_6mo_complete.csv")
 ```
 

@@ -313,8 +313,8 @@ lena_5min <-
 ```
 
 # Clean 5-minute data to identify observations to retain
-Retain observations that occured between ages 5-8 months or 5-9 months (depending on analysis goal)
-Retain observations totaling at least 8 hours of recording
+Retain observations that occurred between ages 5-8 months or 5-9 months (depending on analysis goal).
+Retain observations totaling at least 8 hours of recording.
 
 ## Reformat data
 ```{r}
@@ -410,7 +410,7 @@ lena_followup_cs_day1 <-
   rename(ID = record_id) %>% 
   mutate(ID = as.integer(ID), day = 1) %>% 
   filter(lena_day_1_followup_questions_complete == 2) %>% 
-  dplyr::select(ID, day, lena_caregivers___1:lena_notes)
+  dplyr::select(ID, day, lena_mornstart:lena_notes)
 
 lena_followup_cs_day2 <-
   read_csv(lena_followup_day2_cs_file) %>% 
@@ -420,14 +420,14 @@ lena_followup_cs_day2 <-
   rename(ID = record_id) %>% 
   mutate(ID = as.integer(ID), day = 2) %>% 
   filter(lena_day_followup_questions_complete == 2) %>% 
-  dplyr::select(ID, day, lena_caregivers___1:lena_notes)
+  dplyr::select(ID, day, lena_mornstart:lena_notes)
 
 lena_followup_lg_day1 <-
   read_csv(lena_followup_day1_lg_file) %>% 
   rename(ID = record_id) %>% 
   mutate(ID = as.integer(ID), day = 1) %>% 
   filter(lena_day_1_followup_questions_complete == 2) %>% 
-  dplyr::select(ID, day, lena_caregivers___1:lena_notes)
+  dplyr::select(ID, day, lena_mornstart:lena_notes)
 
 lena_followup_lg_day2 <-
   read_csv(lena_followup_day2_lg_file) %>% 
@@ -437,7 +437,7 @@ lena_followup_lg_day2 <-
   rename(ID = record_id) %>% 
   mutate(ID = as.integer(ID), day = 2) %>% 
   filter(lena_day_followup_questions_complete == 2) %>% 
-  dplyr::select(ID, day, lena_caregivers___1:lena_notes)
+  dplyr::select(ID, day, lena_mornstart:lena_notes)
 
 lena_followup <-
   lena_followup_cs_day1 %>% 
@@ -451,7 +451,7 @@ lena_followup <-
     lena_followup_lg_day2
   ) %>% 
   dplyr::select(
-    -lena_prob:-lena_notes
+    -lena_sick:-lena_crowdslength
   )
 ```
 
@@ -468,7 +468,8 @@ lena_time <-
       as.duration(hms(as.numeric(Duration))),
       "hours"
     )
-  ) 
+  ) %>% 
+  ungroup()
 ```
 
 ## Filter raw 5-minute data to only include usable observations as determined above
@@ -491,13 +492,14 @@ lena_time_cl <-
   filter(included == 1)
 ```
 
-## Identify value and times of first and last CT and AW of the day
+## Identify value and times of first and last CT of the day
 ```{r}
 lena_time_cl <-
   lena_time_cl %>% 
   arrange(ID, time_hours) %>% 
   group_by(ID, day) %>% 
   mutate(
+    duration_total = sum(duration),
     # first ct
     ct_first_row = head(which(CTC.Actual != 0), 1),
     ct_first = nth(CTC.Actual, n = ct_first_row[1]),
@@ -506,27 +508,28 @@ lena_time_cl <-
     ct_last_row = tail(which(CTC.Actual != 0), 1),
     ct_last = nth(CTC.Actual, n = ct_last_row[1]),
     ct_last_time = nth(time_hours, n = ct_last_row[1]),
-    # create grouping variable for time of day 
+    # create grouping variable for time of day
     time_day = case_when(
       time_hours >= ct_first_time & time_hours <= 10 ~ "AM",
       time_hours >= 10 & time_hours < 13 ~ "MID",
       time_hours >= 13 & time_hours < 17 ~ "AFT",
       time_hours >= 17 & time_hours < ct_last_time ~ "PM"
-    )
-  ) %>% 
-  dplyr::select(-ct_last_row, -ct_first_row) %>% 
-  # remove observations froms times of day before first CT or after last CT
+      )
+    ) %>%
+    dplyr::select(-ct_last_row, -ct_first_row) %>%
+  # remove observations from times of day before first CT or after last CT
   filter(!is.na(time_day)) %>% 
   ungroup()
 ```
 
 ```{r}
 # average times of first and last CT
-lena_time_cl %>% 
+lena_time_cl %>%
   summarize_at(
     vars(ct_first_time, ct_last_time),
     funs(mean, sd, min, max)
   )
+
 ```
 
 ## Compute hourly maximums
@@ -550,7 +553,8 @@ lena_hourly_max <-
     awc_hour_max = max(awc_hour_sum),
     ctc_hour_max = max(ctc_hour_sum),
     cvc_hour_max = max(cvc_hour_sum)
-  )
+  ) %>% 
+  ungroup()
 ```
 
 ## Calculate rates and consistency during each phase of day and across each day
@@ -606,16 +610,46 @@ lena_time_day <-
 lena_final_lf <-
   lena_time_day %>% 
   left_join(lena_hourly_max, by = c("ID", "day")) %>% 
+  left_join(
+    lena_time_cl %>% 
+      distinct(ID, date_record, .keep_all = TRUE) %>% 
+      dplyr::select(
+        ID, 
+        duration_total,
+        ct_first_time, 
+        ct_last_time,
+      ),
+    by = "ID"
+  ) %>% 
   left_join(lena_followup, by = c("ID", "day")) %>% 
   mutate(
     day_type = wday(date_record),
     day_type = if_else(day_type == 1 | day_type == 7, "weekend", "weekday")
   ) %>% 
+  distinct(ID, day, duration_time_day, .keep_all = TRUE) %>% 
   group_by(ID, day) %>% 
   mutate(
-    duration = sum(duration_time_day)
+    duration_analyzed = sum(duration_time_day)
   ) %>% 
-  ungroup()
+  ungroup() %>% 
+  distinct(ID, day, .keep_all = TRUE) %>% 
+  # remove problematic recordings (not on typical days or recorded incorrectly)
+  mutate(
+    problematic = case_when(
+      ID == 56 & day == 1 ~ 1,
+      ID == 62 & day == 1 ~ 1,
+      ID == 106 & day == 2 ~ 1,
+      ID == 110 & day == 2 ~ 1,
+      ID == 1010 & day == 1 ~ 1,
+      ID == 1045 & day == 2 ~ 1,
+      ID == 1052 & day == 2 ~ 1,
+      ID == 1119 & day == 1 ~ 1,
+      TRUE ~ 0
+    )
+  ) %>% 
+  filter(problematic == 0) %>% 
+  dplyr::select(-problematic)
+
 ```
 
 ## Create final wide-format data frames with basic variables
@@ -640,7 +674,7 @@ lena_final_wf <-
     -awc_time_day,
     -duration_time_day
   ) %>% 
-  gather(variable, value, age:duration) %>% 
+  gather(variable, value, age:duration_analyzed) %>% 
   unite(temp, variable, day) %>% 
   spread(temp, value) %>% 
   mutate_at(
@@ -648,7 +682,10 @@ lena_final_wf <-
       age_1:cvc_rate_2, 
       percent_mother_1, 
       percent_mother_2,
-      duration_1:duration_2
+      duration_total_1,
+      duration_total_2,
+      duration_analyzed_1,
+      duration_analyzed_2
     ),
     as.double
   ) %>% 
@@ -683,10 +720,22 @@ lena_day1 <-
   #if missing day 1, use day 2
   mutate(
     date_record = if_else(
-      is.na(date_record_1), date_record_2, date_record_1
+      is.na(cvc_max_1), date_record_2, date_record_1
     ),
     age = if_else(
-      is.na(age_1), age_2, age_1
+      is.na(cvc_max_1), age_2, age_1
+    ),
+    ct_first_time = if_else(
+      is.na(cvc_max_1), ct_first_time_2, ct_first_time_1
+    ),
+    ct_last_time = if_else(
+      is.na(cvc_max_1), ct_last_time_2, ct_last_time_1
+    ),
+    duration_total = if_else(
+      is.na(cvc_max_1), duration_total_2, duration_total_1
+    ),
+    duration_analyzed = if_else(
+      is.na(cvc_max_1), duration_analyzed_2, duration_analyzed_1
     ),
     cvc_max = if_else(
       is.na(cvc_max_1), cvc_max_2, cvc_max_1
@@ -713,16 +762,31 @@ lena_day1 <-
       is.na(cvc_max_1), ctc_rate_2, ctc_rate_1
     ),
     awc_hour_max = if_else(
-      is.na(awc_hour_max_1), awc_hour_max_2, awc_hour_max_2
+      is.na(awc_hour_max_1), awc_hour_max_2, awc_hour_max_1
     ),
     ctc_hour_max = if_else(
-      is.na(ctc_hour_max_1), ctc_hour_max_2, ctc_hour_max_2
+      is.na(cvc_max_1), ctc_hour_max_2, ctc_hour_max_1
     ),
     cvc_hour_max = if_else(
-      is.na(cvc_hour_max_1), cvc_hour_max_2, cvc_hour_max_2
+      is.na(cvc_max_1), cvc_hour_max_2, cvc_hour_max_1
     ),
     day_type = if_else(
       is.na(cvc_max_1), day_type_2, day_type_1
+    ),
+    lena_mornstart = if_else(
+      is.na(cvc_max_1), lena_mornstart_2, lena_mornstart_1
+    ),
+    lena_recordfull = if_else(
+      is.na(cvc_max_1), lena_recordfull_2, lena_recordfull_1
+    ),
+    lena_recordno = if_else(
+      is.na(cvc_max_1), lena_recordno_2, lena_recordno_1
+    ),
+    lena_prob = if_else(
+      is.na(cvc_max_1), lena_prob_2, lena_prob_1
+    ),
+    lena_probyes = if_else(
+      is.na(cvc_max_1), lena_probyes_2, lena_probyes_1
     ),
     lena_caregivers___1 = if_else(
       is.na(cvc_max_1), lena_caregivers___1_2, lena_caregivers___1_1
@@ -759,10 +823,12 @@ lena_day1 <-
     ),
     percent_mother = if_else(
       is.na(cvc_max_1), percent_mother_2, percent_mother_1
+    ),
+    lena_notes = if_else(
+      is.na(cvc_max_1), lena_notes_2, lena_notes_1
     )
   ) %>% 
-  dplyr::select(ID, age:percent_mother)
-  
+  dplyr::select(ID, date_record:lena_notes)
 ```
 
 ## Histograms
@@ -780,7 +846,14 @@ identify_outliers_hist(lena_final_wf, lena_weeks_btwn)
 
 lena_rel <-
   lena_final_wf %>% 
-  filter(!is.na(ctc_max_2))
+  filter(!is.na(ctc_max_2)) %>% 
+  mutate(
+    day_type_same = case_when(
+      day_type_1 == "weekday" & day_type_2 == "weekday" ~ "same",
+      day_type_1 == "weekend" & day_type_2 == "weekend" ~ "same",
+      TRUE ~ "different"
+    )
+  )
 ```
 
 ```{r}
@@ -868,4 +941,5 @@ write_csv(lena_final_lf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_d
 write_csv(lena_final_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/LENA/lena_final_wf_day1day2_20200208_upto9months.csv")
 write_csv(lena_day1, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/LENA/lena_final_wf_day1_20200208_upto9months.csv")
 ```
+
 

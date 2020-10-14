@@ -100,9 +100,6 @@ scan_age_6mo <-
     age_scan_t3 = age_scan,
     age_scan_corr_t3 = age_scan_corr
   )
-
-scan_age_6mo %>% 
-  filter(ID == 64)
 ```
 
 # cross-sectional data
@@ -843,6 +840,16 @@ write_csv(
   demo_lg, 
   "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/demo_longitudinal_cleaned_final.csv"
 )
+
+demo_lg %>% 
+  filter(ID == 1078) %>% 
+  select(
+    conception_date,
+    due_date,
+    visit_date_t1,
+    gestational_weeks_t1
+  )
+
 
 ```
     

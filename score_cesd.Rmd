@@ -13,7 +13,7 @@ library(tidyverse)
 cesd_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/raw_data/cesd_lg_complete.csv"
 cesd_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/raw_data/cesd_cs_complete.csv"
 cesd_18mo_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_cs_complete.csv"
-cesd_18mo_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20200414.csv"
+cesd_18mo_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20201001.csv"
 ```
 
 # Read in and score data
@@ -296,7 +296,7 @@ cesd %>%
 ```
 
 ```{r}
-write_csv(cesd_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_wf_20200507.csv")
-write_csv(cesd, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_lf_20200507.csv")
+write_csv(cesd_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_wf_20201001.csv")
+write_csv(cesd, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_lf_20201001.csv")
 ```
 

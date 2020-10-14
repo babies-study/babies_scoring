@@ -1,0 +1,30 @@
+---
+title: "Score Difficulties in Emotion Regulation Scale"
+author: "Lucy King"
+date: "9/22/2020"
+output: html_document
+---
+
+# Set up environment    
+```{r}
+#Libraries
+library(tidyverse)
+
+#Data files
+ders_lg_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/DERS/raw_data/ders_lg_final.csv"
+ders_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/DERS/raw_data/ders_cs_final.csv"
+```
+
+# Read in data 
+```{r}
+ders_lg <-
+  read_csv(ders_lg_file) %>% 
+  rename(ID = record_id) %>% 
+  filter(ders_complete != 0)
+```
+
+# Score DERS
+```{r}
+
+```
+
