@@ -402,6 +402,7 @@ lena_5min_cl %>%
 write_csv(lena_5min_cl, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/LENA/included_final_upto9months.csv")
 ```
 
+
 # Read in LENA follow-up data
 
 ```{r}
@@ -492,6 +493,27 @@ lena_time_cl <-
   filter(included == 1)
 ```
 
+## Visualize at 5-minute level
+```{r}
+lena_time_cl %>% 
+  filter(day == 1) %>% 
+  ggplot(aes(time_hours, CTC.Actual)) +
+  geom_jitter(alpha = 1/4, size = .5) +
+  scale_x_continuous(breaks = seq.int(6, 24, 4)) +
+  theme_lena +
+  labs(
+    x = "Time of day\n(hours since 12:00 AM)",
+    y = "Number of conversational turns"
+  )
+
+ggsave(
+  "~/Box/lucy_king_files/BABIES/dissertation/defense/figures/ct_time_hours.png",
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+```
+
 ## Identify value and times of first and last CT of the day
 ```{r}
 lena_time_cl <-
@@ -557,6 +579,7 @@ lena_hourly_max <-
   ungroup()
 ```
 
+
 ## Calculate rates and consistency during each phase of day and across each day
 ``` {r}
 lena_time_day <- 
@@ -604,6 +627,7 @@ lena_time_day <-
   ) %>% 
   ungroup()
 ```
+
 
 ## Merge with follow-up data
 ```{r}
@@ -839,6 +863,141 @@ identify_outliers_hist(lena_final_wf, ctc_prop_1)
 identify_outliers_hist(lena_final_wf, awc_prop_1)
 ```
 
+```{r}
+ctc_prop_1_mean <-  mean(lena_final_wf$ctc_prop_1, na.rm = TRUE)
+ctc_prop_1_mean_txt <-  as.character(round(mean(lena_final_wf$ctc_prop_1, na.rm = TRUE), 2))
+
+lena_final_wf %>% 
+  ggplot(aes(ctc_prop_1)) +
+  geom_histogram(binwidth = .05) +
+  geom_vline(
+    color = "blue",
+    xintercept = ctc_prop_1_mean,
+    size = 2
+  ) +
+  annotate(
+    "text",
+    label = ctc_prop_1_mean_txt,
+    x = .63,
+    y = 18,
+    color = "blue",
+    size = 8
+  ) +
+  scale_x_continuous(breaks = seq.int(.2, .8, .1)) +
+  theme_lena +
+  labs(
+    x = "Consistency of conversations"
+  )
+
+ggsave(
+  "~/Box/lucy_king_files/BABIES/dissertation/defense/figures/ctc_consistency_hist.png",
+  width = 5,
+  height = 4
+  )
+```
+
+```{r}
+ctc_quant_1_mean <-  mean(lena_final_wf$ctc_hour_max_1, na.rm = TRUE)
+ctc_quant_1_mean_txt <-  as.character(round(mean(lena_final_wf$ctc_hour_max_1, na.rm = TRUE), 2))
+
+lena_final_wf %>% 
+  ggplot(aes(ctc_hour_max_1)) +
+  geom_histogram(binwidth = 12) +
+  geom_vline(
+    color = "red",
+    xintercept = ctc_quant_1_mean,
+    size = 2
+  ) +
+  annotate(
+    "text",
+    label = ctc_quant_1_mean_txt,
+    x = 100,
+    y = 18,
+    color = "red",
+    size = 8
+  ) +
+  scale_x_continuous(breaks = seq.int(0, 180, 20)) +
+  theme_lena +
+  labs(
+    x = "Quantity of conversations"
+  )
+
+ggsave(
+  "~/Box/lucy_king_files/BABIES/dissertation/defense/figures/ctc_quantity_hist.png",
+  width = 5,
+  height = 4
+  )
+```
+## Visualize consistency compared to quantity
+
+```{r}
+lena_day1 %>% 
+  select(ID, ctc_hour_max, ctc_prop) %>%
+  arrange(desc(ctc_prop))
+
+```
+
+```{r}
+lena_time_cl %>% 
+  filter(ID == 64) %>% 
+  left_join(lena_day1, by = "ID") %>% 
+  ggplot(aes(time_hours, CTC.Actual)) +
+  geom_step(color = "cadetblue3", size = 1) +
+  scale_x_continuous(breaks = seq.int(8, 22, 2)) +
+  scale_y_continuous(breaks = seq.int(0, 35, 5)) +
+  theme_lena +
+  theme(
+    axis.title.y = element_text(vjust = 2),
+    axis.title.x = element_text(vjust = 1)
+  ) +
+  labs(
+    y = "Conversational turns",
+    x = "Time\n(hours since midnight)"
+  )
+
+ggsave(
+  "~/Box/lucy_king_files/BABIES/dissertation/defense/figures/higher_quantity.png",
+  width = 6.5,
+  height = 5
+)
+```
+
+```{r}
+lena_time_cl %>% 
+  filter(ID == 12 | ID == 64) %>% 
+  mutate(
+    subject = if_else(
+      ID == 64, "Higher quantity",
+      "Higher consistency"
+    ),
+    subject = factor(subject)
+  ) %>% 
+  left_join(lena_day1, by = "ID") %>% 
+  ggplot(aes(time_hours, CTC.Actual, color = fct_rev(subject))) +
+  geom_step(size = .75) +
+  scale_x_continuous(breaks = seq.int(8, 22, 2)) +
+  scale_y_continuous(breaks = seq.int(0, 35, 5)) +
+  scale_color_manual(
+    values = c("cadetblue3", "darkorchid3")
+  ) +
+  theme_lena +
+  theme(
+    axis.title.y = element_text(vjust = 2),
+    axis.title.x = element_text(vjust = 1),
+    legend.position = "none"
+  ) +
+  labs(
+    y = "Conversational turns",
+    x = "Time\n(hours since midnight)"
+  )
+
+ggsave(
+  "~/Box/lucy_king_files/BABIES/dissertation/defense/figures/quantity_v_consistency.png",
+  width = 7,
+  height = 5.5
+)
+```
+
 # LENA reliability
 
 ```{r}
@@ -933,6 +1092,9 @@ lena_rel %>%
 
 cor.test(lena_rel$awc_prop_1, lena_rel$awc_prop_2)
 ```
+
+
+
 ## Write file 
 
 5-9 months

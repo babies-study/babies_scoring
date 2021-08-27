@@ -256,6 +256,19 @@ cesd_wf <-
   )
 ```
 
+# 6-month only
+```{r}
+cesd_6mo <-
+  cesd %>% 
+  filter(redcap_event_name == "sixmonth_arm_1") %>% 
+  mutate(
+    cesd_concern = if_else(
+      cesd_total >= 16,
+      "clinical concern", "none"
+    )
+  )
+```
+
 # Distributions and Descriptives
 
 ```{r}
@@ -298,5 +311,6 @@ cesd %>%
 ```{r}
 write_csv(cesd_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_wf_20201001.csv")
 write_csv(cesd, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_lf_20201001.csv")
+write_csv(cesd_6mo, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CESD/cesd_6mo_complete.csv")
 ```
 

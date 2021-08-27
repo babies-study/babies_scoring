@@ -17,7 +17,7 @@ crisys_6mo_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data
 
 
 #Functions
-source("~/Box/lucy_king_files/BABIES/infant_scripts/babies_scoring/winsorize.R")
+source("~/Desktop/BABIES/infant_scripts/babies_scoring/winsorize.R")
 
 ```
 
@@ -353,6 +353,10 @@ crisys_wf <-
   gather(variable, value, crisys_total:crisys_ses_win) %>% 
   unite(temp, timepoint, variable) %>% 
   spread(temp, value) 
+
+crisys_6mo <-
+  crisys %>% 
+  filter(timepoint == "sixmonth")
 ```
 
 # Histograms
@@ -425,23 +429,11 @@ anova(crisys_mod1)
 ```
 
 ```{r}
-crisys_6mo <-
-  crisys_wf %>% 
-    select(
-      ID,
-      crisys_total_6mo = sixmonth_crisys_total,
-      crisys_neg_total_6mo = sixmonth_crisys_neg_total,
-      crisys_total_6mo_win = sixmonth_crisys_win,
-      crisys_neg_total_6mo_win = sixmonth_crisys_neg_win,
-      crisys_ses_total_6mo = sixmonth_crisys_ses_total,
-      crisys_ses_total_6mo_win = sixmonth_crisys_ses_win
-    )
-```
-
-```{r}
 write_csv(crisys_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_wf_complete.csv")
 
 write_csv(crisys, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_lf_complete.csv")
+
+write_csv(crisys_6mo, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_6mo_complete.csv")
 ```
 
 

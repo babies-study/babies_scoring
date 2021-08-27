@@ -14,7 +14,7 @@ library(GPArotation)
 # Files
 
 q_18month_cs_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_cs_complete.csv"
-q_18month_long_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20201001.csv"
+q_18month_long_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20201229.csv"
 demographics_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/dob_sex_race_final.csv"
 
 theme_lena <-
@@ -202,7 +202,7 @@ itsea <-
 
 ## Calculate subscale scores
 
-Using scoring specific by ITSEA manual. For each subscale, calculate the mean by taking the sum and dividing by the number of items the both responded to. If the mother missed too many items, replace subscale score with NA.
+Using scoring specified by ITSEA manual. For each subscale, calculate the mean by taking the sum and dividing by the number of items the both responded to. If the mother missed too many items, replace subscale score with NA.
 
 ```{r}
 itsea <-

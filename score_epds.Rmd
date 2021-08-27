@@ -21,7 +21,7 @@ epds_cs <-
     ID = as.integer(ID),
     redcap_event_name = "T3"
   ) %>% 
-  select(
+  dplyr::select(
     -redcap_survey_identifier:-epds_timestamp,
     -epds_complete
   ) %>%
@@ -36,7 +36,7 @@ epds_cs <-
     ),
     funs(
       . %>%
-        recode(
+        dplyr::recode(
           "3" = 0,
           "2" = 1,
           "1" = 2,
@@ -60,7 +60,15 @@ epds_cs <-
         epds_10
       ),
       na.rm = TRUE
-    ) * 10
+    ) * 10,
+    epds_3A = mean( #anxiety items
+      c(
+        epds_3,
+        epds_4,
+        epds_5
+      ),
+      na.rm = TRUE
+    ) * 3
   ) %>% 
   ungroup()
 ```
@@ -71,14 +79,14 @@ epds_lg <-
   rename(ID = record_id) %>%
   mutate(
     ID = as.integer(ID),
-    redcap_event_name = recode(
+    redcap_event_name = dplyr::recode(
       redcap_event_name,
       "pregnancy_arm_1" = "T1",
       "neonatal_arm_1" = "T2",
       "sixmonth_arm_1" = "T3"
     )
   ) %>% 
-  select(
+  dplyr::select(
     -redcap_survey_identifier:-epds_timestamp,
     -epds_complete
   ) %>%
@@ -93,7 +101,7 @@ epds_lg <-
     ),
     funs(
       . %>%
-        recode(
+        dplyr::recode(
           "3" = 0,
           "2" = 1,
           "1" = 2,
@@ -117,7 +125,15 @@ epds_lg <-
         epds_10
       ),
       na.rm = TRUE
-    ) * 10
+    ) * 10,
+    epds_3A = mean( #anxiety items
+      c(
+        epds_3,
+        epds_4,
+        epds_5
+      ),
+      na.rm = TRUE
+    ) * 3
   ) %>% 
   ungroup()
 ```
@@ -134,27 +150,29 @@ epds_lf <-
 ```{r}
 epds_wf <-
   epds_lf %>% 
-  select(ID, timepoint, epds_total) %>% 
-  spread(timepoint, epds_total) %>% 
-  rename(
-    epds_t1 = T1,
-    epds_t2 = T2,
-    epds_t3 = T3
+  dplyr::select(ID, timepoint, epds_total, epds_3A) %>% 
+  pivot_wider(
+    names_from = timepoint,
+    values_from = c(epds_total, epds_3A)
+  ) %>% 
+  rename_at(
+    vars(-ID),
+    funs(str_to_lower(.))
   ) %>% 
   mutate(
     epds_t1_concern = if_else(
-      epds_t1 > 10, "clinical concern", "none"
+      epds_total_t1 > 10, "clinical concern", "none"
     ),
     epds_t2_concern = if_else(
-      epds_t2 > 10, "clinical concern", "none"
+      epds_total_t2 > 10, "clinical concern", "none"
     ),
     epds_t3_concern = if_else(
-      epds_t3 > 10, "clinical concern", "none"
+      epds_total_t3 > 10, "clinical concern", "none"
     )
   ) %>% 
   group_by(ID) %>% 
   mutate(
-    max_epds_t1t2 = max(c(epds_t1, epds_t2), na.rm = TRUE),
+    max_epds_t1t2 = max(c(epds_total_t1, epds_total_t2), na.rm = TRUE),
     max_epds_t1t2 = if_else(max_epds_t1t2 == -Inf, NA_real_, max_epds_t1t2)
   ) %>% 
   ungroup()
@@ -164,17 +182,17 @@ epds_wf <-
 ```{r}
 epds_lf %>% 
   filter(timepoint == "T1") %>% 
-  select(epds_1:epds_10) %>% 
+  dplyr::select(epds_1:epds_10) %>% 
   psych::alpha()
 
 epds_lf %>% 
   filter(timepoint == "T2") %>% 
-  select(epds_1:epds_10) %>% 
+  dplyr::select(epds_1:epds_10) %>% 
   psych::alpha()
 
 epds_lf %>% 
   filter(timepoint == "T3") %>% 
-  select(epds_1:epds_10) %>% 
+  dplyr::select(epds_1:epds_10) %>% 
   psych::alpha()
 ```
 

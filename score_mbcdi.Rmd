@@ -11,7 +11,7 @@ library(lubridate)
 
 demo_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/demographics/dob_sex_race_final.csv"
 cs_18_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_cs_complete.csv"
-lg_18_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20200729.csv"
+lg_18_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/raw_data/mo18_survey_lg_20201229.csv"
 ```
 
 # Read in data
@@ -109,7 +109,7 @@ says_vars <-
 m <-
   m %>% 
   mutate_at(
-    vars(understands_vars),
+    all_of(understands_vars),
     funs(
       if_else(
         get(str_replace(quote(.), "___1", "___2")) == 1,
@@ -497,6 +497,6 @@ mbcdi_scored <-
     mbcdi_says_percentile
   )
 
-write_csv(mbcdi_scored, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/mbcdi_scored_20200729.csv")
+write_csv(mbcdi_scored, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/survey_18month/mbcdi_scored_20210315.csv")
 ```
 

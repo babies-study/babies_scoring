@@ -11,6 +11,8 @@ library(corrplot)
 
 ##Parameters
 free_play_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/raw_data/PCIRS_FreePlay_MASTER_20200508.xlsx"
+
+
 ```
 
 
@@ -264,6 +266,26 @@ fp_final_lf_8min <-
   )
 ```
 
+```{r}
+fp_final_wf_10min <-
+  fp_final_lf_10min %>% 
+  group_by(ID) %>% 
+  summarise_at(
+    vars(sens_FP:detach_FP), 
+    funs(mean), na.rm = TRUE
+  )
+```
+
+
+```{r}
+fp_final_wf_10min_episode <-
+  fp_final_lf_10min %>% 
+  pivot_wider(
+    names_from = episode,
+    values_from = sens_FP:detach_FP
+  )
+```
+
 
 ```{r}
 fp_final_wf_8min <-
@@ -279,17 +301,27 @@ fp_final_wf_8min <-
 ```{r}
 write_csv(
   fp_final_lf_10min, 
-  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_lf_10min_20200507.csv"
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_lf_10min_20210106.csv"
 )
 
 write_csv(
   fp_final_lf_8min, 
-  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_lf_10min_20200507.csv"
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_lf_8min_20210106.csv"
+)
+
+write_csv(
+  fp_final_wf_10min, 
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_wf_10min_20210106.csv"
+)
+
+write_csv(
+  fp_final_wf_10min_episode, 
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_wf_10min_episode_20210106.csv"
 )
 
 write_csv(
   fp_final_wf_8min, 
-  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_wf_8min_20200507.csv"
+  "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/lab_caregiving_behavior/free_play_wf_8min_20210106.csv"
 )
 ```
 

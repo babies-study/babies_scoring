@@ -1,0 +1,139 @@
+---
+title: "LENA Reliability"
+author: "Lucy King"
+date: "3/16/2021"
+output: html_document
+---
+```{r}
+library(tidyverse)
+
+lena_file <- "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/LENA/lena_final_wf_day1day2_20200208_upto9months.csv"
+```
+
+```{r}
+d <-
+  read_csv(lena_file) %>% 
+  filter(!is.na(ctc_hour_max_2)) %>% 
+  mutate(
+    age_diff = age_2 - age_1
+  ) %>% 
+  filter(age_diff <= .5)
+```
+
+# Overall ICCs
+
+### Conversational turns
+```{r}
+d %>% 
+  dplyr::select(
+    ctc_hour_max_1,
+    ctc_hour_max_2
+  ) %>% 
+  psych::ICC()
+```
+
+```{r}
+d %>% 
+  dplyr::select(
+    ctc_prop_1,
+    ctc_prop_2
+  ) %>% 
+  psych::ICC()
+```
+
+### Adult words
+```{r}
+d %>% 
+  dplyr::select(
+    awc_hour_max_1,
+    awc_hour_max_2
+  ) %>% 
+  psych::ICC()
+```
+
+```{r}
+d %>% 
+  dplyr::select(
+    awc_prop_1,
+    awc_prop_2
+  ) %>% 
+  psych::ICC()
+```
+
+### Infant vocalizations
+```{r}
+d %>% 
+  dplyr::select(
+    cvc_hour_max_1,
+    cvc_hour_max_2
+  ) %>% 
+  psych::ICC()
+```
+
+### Day type 
+```{r}
+d %>% 
+  count(day_type_1, day_type_2)
+
+d <-
+  d %>% 
+  mutate(
+    same_day_type = case_when(
+      day_type_1 == "weekday" & day_type_2 == "weekday" ~ "same",
+      day_type_1 == "weekend" & day_type_2 == "weekend" ~ "same",
+      TRUE ~ "different"
+    )
+  )
+
+d %>% 
+  count(same_day_type)
+```
+
+
+### Conversational turns
+```{r}
+d_age %>% 
+  dplyr::select(
+    ctc_hour_max_1,
+    ctc_hour_max_2
+  ) %>% 
+  psych::ICC()
+```
+
+```{r}
+d_age %>% 
+  dplyr::select(
+    ctc_prop_1,
+    ctc_prop_2
+  ) %>% 
+  psych::ICC()
+```
+
+### Adult words
+```{r}
+d_age %>% 
+  dplyr::select(
+    awc_hour_max_1,
+    awc_hour_max_2
+  ) %>% 
+  psych::ICC()
+```
+
+```{r}
+d_age %>% 
+  dplyr::select(
+    awc_prop_1,
+    awc_prop_2
+  ) %>% 
+  psych::ICC()
+```
+
+### Infant vocalizations
+```{r}
+d_age %>% 
+  dplyr::select(
+    cvc_hour_max_1,
+    cvc_hour_max_2
+  ) %>% 
+  psych::ICC()
+```
