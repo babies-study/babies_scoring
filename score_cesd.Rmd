@@ -218,6 +218,7 @@ cesd_wf <-
   dplyr::select(
     ID,
     redcap_event_name,
+    cesd_1:cesd_20,
     cesd_total
   ) %>% 
   mutate(
@@ -229,12 +230,15 @@ cesd_wf <-
       "eighteenmonth" = "T4"
     )
   ) %>% 
-  spread(redcap_event_name, cesd_total) %>% 
+  pivot_wider(
+   names_from = redcap_event_name,
+   values_from = cesd_1:cesd_total
+  ) %>% 
   rename(
-    cesd_t1 = T1,
-    cesd_t2 = T2,
-    cesd_t3 = T3,
-    cesd_t4 = T4
+    cesd_t1 = cesd_total_T1,
+    cesd_t2 = cesd_total_T2,
+    cesd_t3 = cesd_total_T3,
+    cesd_t4 = cesd_total_T4,
   ) %>% 
   mutate(
     cesd_t1_concern = if_else(

@@ -332,31 +332,23 @@ crisys %>%
 crisys <-
   crisys %>% 
   mutate(
-    timepoint = factor(
-      timepoint,
-      levels = c("pregnancy", "neonatal", "sixmonth")
+    timepoint = case_when(
+      timepoint == "pregnancy" ~ "T1",
+      timepoint == "neonatal" ~ "T2",
+      timepoint == "sixmonth" ~ "T3"
     )
   )
 
 crisys_wf <-
   crisys %>% 
-  select(
-    ID, 
-    timepoint, 
-    crisys_total, 
-    crisys_win, 
-    crisys_neg_total, 
-    crisys_neg_win,
-    crisys_ses_total,
-    crisys_ses_win
-    ) %>% 
-  gather(variable, value, crisys_total:crisys_ses_win) %>% 
-  unite(temp, timepoint, variable) %>% 
-  spread(temp, value) 
+  pivot_wider(
+    names_from = timepoint,
+    values_from = crisys_1:last_col()
+  )
 
 crisys_6mo <-
   crisys %>% 
-  filter(timepoint == "sixmonth")
+  filter(timepoint == "T3")
 ```
 
 # Histograms
@@ -418,15 +410,8 @@ crisys %>%
   geom_histogram() +
   facet_wrap(~timepoint)
 ```
-# Test of differences in crisys by timepoint
-```{r}
-library(lme4)
-library(lmerTest)
 
-crisys_mod1 <- lmer(crisys_win ~ timepoint + (1|ID), data = crisys)
-summary(crisys_mod1)
-anova(crisys_mod1)
-```
+
 
 ```{r}
 write_csv(crisys_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_wf_complete.csv")
@@ -434,6 +419,8 @@ write_csv(crisys_wf, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/
 write_csv(crisys, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_lf_complete.csv")
 
 write_csv(crisys_6mo, "~/Box/Mooddata_Coordinating/BABIES/Data/final_scored_data/CRISYS/crisys_scored_6mo_complete.csv")
+
+glimpse(crisys_wf)
 ```
 
 
